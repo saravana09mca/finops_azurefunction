@@ -29,7 +29,7 @@ steps:
     archiveFile: "$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip"
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: '$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip'
+    PathtoPublish: '$(System.ArtifactsDirectory)/build$(Build.BuildId).zip'
     artifactName: 'drop'
 - task: AzureFunctionApp@1 
   inputs:
