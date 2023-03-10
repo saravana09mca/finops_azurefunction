@@ -31,9 +31,9 @@ steps:
   inputs:
     PathtoPublish: '$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip'
     artifactName: 'drop'
-- task: AzureFunctionApp@1 # Add this at the end of your file
+- task: AzureFunctionApp@1 
   inputs:
     azureSubscription: AzureServiceConnection
-    appType: functionApp # default is functionApp
+    appType: functionApp 
     appName: func-finops
     package: $(System.ArtifactsDirectory)/**/*.zip
