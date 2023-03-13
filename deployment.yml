@@ -37,4 +37,3 @@ steps:
     appType: functionApp 
     appName: func-finops
     package: $(System.DefaultWorkingDirectory)/**/*.zip
-    slotName: dev
