@@ -34,6 +34,17 @@ namespace Budget.TimerFunction
             ConfigStore.DestinationContainerHistory = config.GetValue<string>("DestinationContainerHistory");
             ConfigStore.DestinationBlobNameHistory = config.GetValue<string>("DestinationBlobNameHistory");
             ConfigStore.StartDate = config.GetValue<DateTime>("StartDate");
+
+            ConfigStore.AzureStorageAccountConnectionString = config.GetValue<string>("AzureStorageAccountConnectionString");
+            ConfigStore.GCP_ContrainerName = config.GetValue<string>("GCP_ContrainerName");
+            ConfigStore.GCP_BlobFileName = config.GetValue<string>("GCP_BlobFileName");
+            ConfigStore.GCP_DataSetId = config.GetValue<string>("GCP_DataSetId");
+            ConfigStore.GCP_ProjectId = config.GetValue<string>("GCP_ProjectId");
+            ConfigStore.GCP_TableId = config.GetValue<string>("GCP_TableId");
+            ConfigStore.GCP_FromDate = config.GetValue<string>("GCP_FromDate");
+            ConfigStore.GCP_ToDate = config.GetValue<string>("GCP_ToDate");
+            ConfigStore.GCP_IsManualDateRange = config.GetValue<bool>("GCP_IsManualDateRange");
+            ConfigStore.GCP_DataDaysDiff = config.GetValue<int>("GCP_DataDaysDiff");
         }
 
         public override void Configure(IFunctionsHostBuilder builder)
