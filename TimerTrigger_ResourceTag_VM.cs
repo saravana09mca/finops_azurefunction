@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Microsoft.Azure.Management.Subscription;
+using Microsoft.Azure.Management.Subscription.Models;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Client;
@@ -49,122 +50,124 @@ namespace Budget.TimerFunction
                 {
                     log.LogInformation("Subscription id is " +subscription.SubscriptionId);
                     string subscriptionIds = subscription.SubscriptionId;
-
-                    //call api to get list of resource groups using subscription ids
-                    string resourceApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/resourcegroups?api-version=2021-04-01";
-                    var resourceGroupResponse = httpClient.GetAsync(resourceApiUrl).Result;
-                    DataTable sourceData = new DataTable();
-                    DataRow row = null;
-
-                    sourceData.Columns.Add("Id");
-                    sourceData.Columns.Add("SubscriptionID");
-                    sourceData.Columns.Add("SubscriptionName");
-                    sourceData.Columns.Add("ResourceGroupName");
-                    sourceData.Columns.Add("ResourceName");
-                    sourceData.Columns.Add("ResourceType");
-                    sourceData.Columns.Add("ResourceId");
-                    sourceData.Columns.Add("TagKey");
-                    sourceData.Columns.Add("TagValue");
-                    sourceData.Columns.Add("IsOrphaned");
-                    sourceData.Columns.Add("DateAdded");
-
-                    if (resourceGroupResponse.IsSuccessStatusCode)
+                    if(subscription.State == SubscriptionState.Enabled)
                     {
-                        var result = resourceGroupResponse.Content.ReadAsStringAsync().Result;
-                        dynamic resourceGroupJson = JsonConvert.DeserializeObject(result);
+                        //call api to get list of resource groups using subscription ids
+                        string resourceApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/resourcegroups?api-version=2021-04-01";
+                        var resourceGroupResponse = httpClient.GetAsync(resourceApiUrl).Result;
+                        DataTable sourceData = new DataTable();
+                        DataRow row = null;
 
-                        foreach (var item in resourceGroupJson.value)
+                        sourceData.Columns.Add("Id");
+                        sourceData.Columns.Add("SubscriptionID");
+                        sourceData.Columns.Add("SubscriptionName");
+                        sourceData.Columns.Add("ResourceGroupName");
+                        sourceData.Columns.Add("ResourceName");
+                        sourceData.Columns.Add("ResourceType");
+                        sourceData.Columns.Add("ResourceId");
+                        sourceData.Columns.Add("TagKey");
+                        sourceData.Columns.Add("TagValue");
+                        sourceData.Columns.Add("IsOrphaned");
+                        sourceData.Columns.Add("DateAdded");
+
+                        if (resourceGroupResponse.IsSuccessStatusCode)
                         {
-                            Console.WriteLine("{0} \n", item.name);
-                            string rgName = Convert.ToString(item.name);
-                            log.LogInformation("ResourceGrouptName for Subscription id " +subscription.SubscriptionId + " is " + rgName);
-                            
-                            //call api to get the resource details
-                            var resourcesApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/resourceGroups/{rgName}/resources?api-version=2021-04-01";
-                            var resourceResponse = httpClient.GetAsync(resourcesApiUrl).Result;
+                            var result = resourceGroupResponse.Content.ReadAsStringAsync().Result;
+                            dynamic resourceGroupJson = JsonConvert.DeserializeObject(result);
 
-                            if (resourceResponse.IsSuccessStatusCode)
+                            foreach (var item in resourceGroupJson.value)
                             {
-                                var resourceResult = resourceResponse.Content.ReadAsStringAsync().Result;
-                                dynamic resourceJson = JsonConvert.DeserializeObject(resourceResult);
-
-                                foreach (var resource in resourceJson.value)
-                                {
-                                    string resourceTagId = resource.id;
-                                    row = sourceData.NewRow(); 
-
-                                    //call api to get the virtual machine details
-                                    var vmApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/providers/Microsoft.Compute/virtualMachines?api-version=2022-11-01&statusOnly=true";
-                                    var vmResponse = httpClient.GetAsync(vmApiUrl).Result;
-
-                                    //call api to get the disk details
-                                    var diskAoiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/providers/Microsoft.Compute/disks?api-version=2021-12-01";
-                                    var diskResponse = httpClient.GetAsync(diskAoiUrl).Result;
-                                    var diskResult = diskResponse.Content.ReadAsStringAsync().Result;
-                                    dynamic diskJson = JsonConvert.DeserializeObject(diskResult);
-
-                                        row = sourceData.NewRow(); 
-                                        var vmResult = vmResponse.Content.ReadAsStringAsync().Result;
-                                        dynamic vmJson = JsonConvert.DeserializeObject(vmResult);
-                                        Console.WriteLine("{0} \n", vmJson);
-
-                                        row["SubscriptionID"] = subscriptionIds;
-                                        row["SubscriptionName"] = subscription.DisplayName;
-                                        row["ResourceGroupName"] = Convert.ToString(item.name);
-                                        row["ResourceName"] = resource.name;
-                                        row["ResourceType"] = resource.type;
-                                        row["ResourceId"] = resource.id;
-                                        row["IsOrphaned"] = false;
-                                        if(resource.ContainsKey("tags"))
-                                        {
-                                            foreach (var property in resource.tags)
-                                            {
-                                                row["TagValue"] = property.Value.ToString();
-                                                row["TagKey"] = property.Name;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            row["TagValue"] = string.Empty;
-                                            row["TagKey"] = string.Empty;
-                                        }
-                                        
-                                        foreach (var vm in vmJson.value)
-                                        {
-                                            string vmId = vm.id;
-                                            string status = vm.properties.instanceView.statuses[1].displayStatus;
-                                            if(vm.properties.instanceView.statuses[1].displayStatus == "VM deallocated")
-                                            {
-                                                row["IsOrphaned"] = true;
-                                            }   
-                                        }
-
-                                        foreach (var disk in diskJson.value)
-                                        {
-                                            string diskId = disk.id;
-                                            string diskStatus = disk.properties.diskState;
-                                            if(diskStatus != "Attached")
-                                            {
-                                                row["IsOrphaned"] = true;
-                                            }   
-                                        }
-                                        row["DateAdded"] = DateTime.Now;
-
-                                        sourceData.Rows.Add(row); 
-                                        
-                                } 
-                                
-                            }  
+                                Console.WriteLine("{0} \n", item.name);
+                                string rgName = Convert.ToString(item.name);
+                                log.LogInformation("ResourceGrouptName for Subscription id " +subscription.SubscriptionId + " is " + rgName);
                             
-                        }
-                        
-                    }
-                    if(sourceData.Rows.Count > 0)
+                                //call api to get the resource details
+                                var resourcesApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/resourceGroups/{rgName}/resources?api-version=2021-04-01";
+                                var resourceResponse = httpClient.GetAsync(resourcesApiUrl).Result;
+
+                                if (resourceResponse.IsSuccessStatusCode)
                                 {
-                                    SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
-                                    bcp.DestinationTableName = "ResourceTag_OrphanedVM";
-                                    bcp.WriteToServer(sourceData);
-                                } 
+                                    var resourceResult = resourceResponse.Content.ReadAsStringAsync().Result;
+                                    dynamic resourceJson = JsonConvert.DeserializeObject(resourceResult);
+
+                                    foreach (var resource in resourceJson.value)
+                                    {
+                                        string resourceTagId = resource.id;
+                                        row = sourceData.NewRow(); 
+
+                                        //call api to get the virtual machine details
+                                        var vmApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/providers/Microsoft.Compute/virtualMachines?api-version=2022-11-01&statusOnly=true";
+                                        var vmResponse = httpClient.GetAsync(vmApiUrl).Result;
+                                        if (vmResponse.IsSuccessStatusCode)
+                                        {
+                                            var vmResult = vmResponse.Content.ReadAsStringAsync().Result;
+                                            dynamic vmJson = JsonConvert.DeserializeObject(vmResult);
+                                            Console.WriteLine("{0} \n", vmJson);
+                                        
+
+                                            //call api to get the disk details
+                                            var diskAoiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/providers/Microsoft.Compute/disks?api-version=2021-12-01";
+                                            var diskResponse = httpClient.GetAsync(diskAoiUrl).Result;
+                                            var diskResult = diskResponse.Content.ReadAsStringAsync().Result;
+                                            dynamic diskJson = JsonConvert.DeserializeObject(diskResult);
+
+                                            row = sourceData.NewRow(); 
+
+                                            row["SubscriptionID"] = subscriptionIds;
+                                            row["SubscriptionName"] = subscription.DisplayName;
+                                            row["ResourceGroupName"] = Convert.ToString(item.name);
+                                            row["ResourceName"] = resource.name;
+                                            row["ResourceType"] = resource.type;
+                                            row["ResourceId"] = resource.id;
+                                            row["IsOrphaned"] = false;
+                                            if(resource.ContainsKey("tags"))
+                                            {
+                                                foreach (var property in resource.tags)
+                                                {
+                                                    row["TagValue"] = property.Value.ToString();
+                                                    row["TagKey"] = property.Name;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                row["TagValue"] = string.Empty;
+                                                row["TagKey"] = string.Empty;
+                                            }
+                                        
+                                            foreach (var vm in vmJson.value)
+                                            {
+                                                string vmId = vm.id;
+                                                string status = vm.properties.instanceView.statuses[1].displayStatus;
+                                                if(vm.properties.instanceView.statuses[1].displayStatus == "VM deallocated")
+                                                {
+                                                    row["IsOrphaned"] = true;
+                                                }   
+                                            }
+
+                                            foreach (var disk in diskJson.value)
+                                            {
+                                                string diskId = disk.id;
+                                                string diskStatus = disk.properties.diskState;
+                                                if(diskStatus != "Attached")
+                                                {
+                                                    row["IsOrphaned"] = true;
+                                                }   
+                                            }
+                                            row["DateAdded"] = DateTime.Now;
+
+                                            sourceData.Rows.Add(row); 
+                                        }
+                                    }                                
+                                }    
+                            } 
+                        }
+                        if(sourceData.Rows.Count > 0)
+                        {
+                            SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
+                            bcp.DestinationTableName = "ResourceTag_OrphanedVM";
+                            bcp.WriteToServer(sourceData);
+                        } 
+                    }
                 }
             }
             catch(Exception ex)

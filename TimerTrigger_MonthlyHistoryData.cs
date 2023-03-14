@@ -16,6 +16,7 @@ using Microsoft.Azure.Storage.DataMovement;
 using Microsoft.Azure.Storage.Blob;
 using Microsoft.Azure.Storage;
 using System.Text;
+using Microsoft.Azure.Management.Subscription.Models;
 
 namespace Budget.TimerFunction
 {
@@ -66,67 +67,70 @@ namespace Budget.TimerFunction
                 {
                     log.LogInformation("Subscription id is " +subscription.SubscriptionId);
                     string subscriptionId = subscription.SubscriptionId;
-                    string subscriptionName = subscription.DisplayName;
-
-                    // serialize to JSON string for POST request body
-                    var myRequestJsonBody = JsonConvert.SerializeObject(requestBody);
-                    var requestContent = new StringContent(myRequestJsonBody, Encoding.UTF8, "application/json");
-
-                    string historicUrl = $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/generateCostDetailsReport?api-version=2022-10-01";
-
-                    // make the POST request
-                    var response = await httpClient.PostAsync(historicUrl, requestContent);
-                    var responseLocation = response.Headers.Location;
-                    string requestLocation = responseLocation.AbsoluteUri;
-                    var requestStatus = httpClient.GetAsync(requestLocation).Result;
-                    if (requestStatus.IsSuccessStatusCode)
+                    if(subscription.State == SubscriptionState.Enabled)
                     {
-                        var resultsJson = requestStatus.Content.ReadAsStringAsync().Result;
-                        dynamic resultURL = JsonConvert.DeserializeObject(resultsJson);
-                        foreach (var resultLink in resultURL.manifest.blobs)
+                        string subscriptionName = subscription.DisplayName;
+
+                        // serialize to JSON string for POST request body
+                        var myRequestJsonBody = JsonConvert.SerializeObject(requestBody);
+                        var requestContent = new StringContent(myRequestJsonBody, Encoding.UTF8, "application/json");
+
+                        string historicUrl = $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/generateCostDetailsReport?api-version=2022-10-01";
+
+                        // make the POST request
+                        var response = await httpClient.PostAsync(historicUrl, requestContent);
+                        var responseLocation = response.Headers.Location;
+                        string requestLocation = responseLocation.AbsoluteUri;
+                        var requestStatus = httpClient.GetAsync(requestLocation).Result;
+                        if (requestStatus.IsSuccessStatusCode)
                         {
-                            Console.WriteLine("{0} \n", resultLink.blobLink);
-                            string blobLink = resultLink.blobLink;
-                            Uri uri = new Uri(blobLink);
-
-                            CloudStorageAccount desCloudStorageAccountHistory = CloudStorageAccount.Parse(ConfigStore.DestinationStorageConn);
-                            CloudBlobClient descBlobClientHistory = desCloudStorageAccountHistory.CreateCloudBlobClient();
-                            string desBlobContainerHistory = ConfigStore.DestinationContainerHistory;
-                            string destBlobNameHistory = ConfigStore.DestinationBlobNameHistory + $"{subscriptionName}" + "_" + Guid.NewGuid();
-                            CloudBlobContainer desContainerHistory = descBlobClientHistory.GetContainerReference(desBlobContainerHistory); 
-                            CloudBlob destinationBlobHistory = desContainerHistory.GetBlockBlobReference(destBlobNameHistory);
-
-                            TransferCheckpoint checkpoint = null;
-                            SingleTransferContext context = GetSingleTransferContext(checkpoint); 
-                            CancellationTokenSource cancellationSource = new CancellationTokenSource();
-                            Stopwatch stopWatch = Stopwatch.StartNew();
-                            Task task;
-                            try
+                            var resultsJson = requestStatus.Content.ReadAsStringAsync().Result;
+                            dynamic resultURL = JsonConvert.DeserializeObject(resultsJson);
+                            foreach (var resultLink in resultURL.manifest.blobs)
                             {
-                                task = TransferManager.CopyAsync(uri, destinationBlobHistory, true , null, context, cancellationSource.Token);
-                                await task;
-                                if(task.IsCompleted)
+                                Console.WriteLine("{0} \n", resultLink.blobLink);
+                                string blobLink = resultLink.blobLink;
+                                Uri uri = new Uri(blobLink);
+
+                                CloudStorageAccount desCloudStorageAccountHistory = CloudStorageAccount.Parse(ConfigStore.DestinationStorageConn);
+                                CloudBlobClient descBlobClientHistory = desCloudStorageAccountHistory.CreateCloudBlobClient();
+                                string desBlobContainerHistory = ConfigStore.DestinationContainerHistory;
+                                string destBlobNameHistory = ConfigStore.DestinationBlobNameHistory + $"{subscriptionName}" + "_" + Guid.NewGuid();
+                                CloudBlobContainer desContainerHistory = descBlobClientHistory.GetContainerReference(desBlobContainerHistory); 
+                                CloudBlob destinationBlobHistory = desContainerHistory.GetBlockBlobReference(destBlobNameHistory);
+
+                                TransferCheckpoint checkpoint = null;
+                                SingleTransferContext context = GetSingleTransferContext(checkpoint); 
+                                CancellationTokenSource cancellationSource = new CancellationTokenSource();
+                                Stopwatch stopWatch = Stopwatch.StartNew();
+                                Task task;
+                                try
                                 {
-                                    log.LogInformation("The file copied successfully from the source to destination.");
-                                 }
-                            }
-                            catch(Exception e)
-                            {
-                                log.LogInformation("\nThe transfer is canceled: {0}", e.Message);  
-                            }
+                                    task = TransferManager.CopyAsync(uri, destinationBlobHistory, true , null, context, cancellationSource.Token);
+                                    await task;
+                                    if(task.IsCompleted)
+                                    {
+                                        log.LogInformation("The file copied successfully from the source to destination.");
+                                    }
+                                }
+                                catch(Exception e)
+                                {
+                                    log.LogInformation("\nThe transfer is canceled: {0}", e.Message);  
+                                }
                                         
-                            stopWatch.Stop();
-                            log.LogInformation("\nTransfer operation completed in " + stopWatch.Elapsed.TotalSeconds + " seconds.");
+                                stopWatch.Stop();
+                                log.LogInformation("\nTransfer operation completed in " + stopWatch.Elapsed.TotalSeconds + " seconds.");
+                            }
                         }
                     }
                 }
             }
-        catch(Exception ex)
-        {
-            string errorMessage = ex.Message;
-            log.LogError(errorMessage, "An exception occured");
+            catch(Exception ex)
+            {
+                string errorMessage = ex.Message;
+                log.LogError(errorMessage, "An exception occured");
+            }
         }
-    }
         public static SingleTransferContext GetSingleTransferContext(TransferCheckpoint checkpoint)
         {
             SingleTransferContext context = new SingleTransferContext(checkpoint);
