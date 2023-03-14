@@ -49,7 +49,7 @@ namespace Budget.TimerFunction
         }
         public List<GCPAdvisorModel> GetGCPAdvisorList(BigQueryClient client, ILogger log)
         {
-            List<GCPAdvisorModel> objbilling = new List<GCPAdvisorModel>();
+            List<GCPAdvisorModel> objAdvisor = new List<GCPAdvisorModel>();
             // Build the query
             var query = "SELECT  * FROM eygds-sandbox-cloud-359111.billing_info_1.recommendations_export";
 
@@ -74,9 +74,9 @@ namespace Budget.TimerFunction
                 }
                 string gcpBillingJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(rowoDict);
                 var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GCPAdvisorModel>(gcpBillingJsonData);
-                objbilling.Add(result);
+                objAdvisor.Add(result);
             }
-            return objbilling;
+            return objAdvisor;
         }
     }
 }
