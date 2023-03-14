@@ -43,6 +43,19 @@ namespace Budget.TimerFunction
                 httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
 
+                DataTable sourceData = new DataTable();
+                sourceData.Columns.Add("Id");
+                sourceData.Columns.Add("SubscriptionID");
+                sourceData.Columns.Add("SubscriptionName");
+                sourceData.Columns.Add("ResourceGroupName");
+                sourceData.Columns.Add("ResourceName");
+                sourceData.Columns.Add("ResourceType");
+                sourceData.Columns.Add("ResourceId");
+                sourceData.Columns.Add("TagKey");
+                sourceData.Columns.Add("TagValue");
+                sourceData.Columns.Add("IsOrphaned");
+                sourceData.Columns.Add("DateAdded");
+
                 var credentials = new TokenCredentials(authResult.AccessToken);
 
                 var subscriptionClient = new SubscriptionClient(credentials);
@@ -55,20 +68,8 @@ namespace Budget.TimerFunction
                         //call api to get list of resource groups using subscription ids
                         string resourceApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/resourcegroups?api-version=2021-04-01";
                         var resourceGroupResponse = httpClient.GetAsync(resourceApiUrl).Result;
-                        DataTable sourceData = new DataTable();
+                        
                         DataRow row = null;
-
-                        sourceData.Columns.Add("Id");
-                        sourceData.Columns.Add("SubscriptionID");
-                        sourceData.Columns.Add("SubscriptionName");
-                        sourceData.Columns.Add("ResourceGroupName");
-                        sourceData.Columns.Add("ResourceName");
-                        sourceData.Columns.Add("ResourceType");
-                        sourceData.Columns.Add("ResourceId");
-                        sourceData.Columns.Add("TagKey");
-                        sourceData.Columns.Add("TagValue");
-                        sourceData.Columns.Add("IsOrphaned");
-                        sourceData.Columns.Add("DateAdded");
 
                         if (resourceGroupResponse.IsSuccessStatusCode)
                         {
@@ -161,14 +162,22 @@ namespace Budget.TimerFunction
                                 }    
                             } 
                         }
-                        if(sourceData.Rows.Count > 0)
-                        {
-                            SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
-                            bcp.DestinationTableName = "ResourceTag_OrphanedVM";
-                            bcp.WriteToServer(sourceData);
-                        } 
+                        
                     }
                 }
+                if(sourceData.Rows.Count > 0)
+                {
+                    using (SqlConnection connection = new SqlConnection(myConnectionString))
+                    {
+                        SqlCommand command = new SqlCommand("DELETE FROM ResourceTag_OrphanedVM;", connection);
+                        command.Connection.Open();
+                        command.ExecuteNonQuery();
+                        command.Connection.Close();
+                    }
+                    SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
+                    bcp.DestinationTableName = "ResourceTag_OrphanedVM";
+                    bcp.WriteToServer(sourceData);
+                } 
             }
             catch(Exception ex)
             {
