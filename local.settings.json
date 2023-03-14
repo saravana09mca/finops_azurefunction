@@ -1,0 +1,23 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "DefaultEndpointsProtocol=https;AccountName=stblobfinops001;AccountKey=PzgWkZSqx6atUIXcv7EVacJae8OgEz0Tz5ukABOcZBeaEMSBP1VvjWJ4hwaCITXl25oDkF3QKfqZ+AStHMhxrA==;EndpointSuffix=core.windows.net",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+    "AADClientId": "76cc8233-0905-4c15-830d-b7b7ffb72180",
+    "AADTenantId": "8836bc45-fd11-4149-891a-9128540cacdd",
+    "AADClientSecret": "rxK8Q~JtEOBe-0SesJ2SVlanAzR7xxG9p_J71cfg",
+    "AADAuthority": "https://login.microsoftonline.com/8836bc45-fd11-4149-891a-9128540cacdd",
+    "DestinationStorageConn": "DefaultEndpointsProtocol=https;AccountName=stfinocostconsumption;AccountKey=FrJJvOuGH4sv9JbYx1IzX/kFmFemzK3CeauouxbnH9ma4JfGBRzzZOldEQ0MqB+ecfL++z2RK+Z9+AStDrFYYA==;EndpointSuffix=core.windows.net",
+    "DestinationContainer": "des-file-transfer",
+    "DestinationBlobName": "testazure/costconsumptiondata/",
+    "Timer": "0 0 1 * * *",
+    "TimerHistory": "0 0 0 5 * *",
+    "WeeklyTrigger": "0 0 6 * * MON",
+
+    "DestinationContainerHistory": "historydata-file-transfer",
+    "DestinationBlobNameHistory": "testazure/costconsumptiondata/",
+
+    "stfinocostconsumption_STORAGE": "DefaultEndpointsProtocol=https;AccountName=stfinocostconsumption;AccountKey=FrJJvOuGH4sv9JbYx1IzX/kFmFemzK3CeauouxbnH9ma4JfGBRzzZOldEQ0MqB+ecfL++z2RK+Z9+AStDrFYYA==;EndpointSuffix=core.windows.net",
+    "sqlconnectionstring": "Server=tcp:sqlserver-finops.database.windows.net,1433;Initial Catalog=sql-finops-consumptiondata;Persist Security Info=False;User ID=finopsadmin;Password=finops@123;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+  }
+}
