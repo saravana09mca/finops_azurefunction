@@ -36,7 +36,7 @@ namespace Budget.TimerFunction
             ConfigStore.StartDate = config.GetValue<DateTime>("StartDate");
 
             ConfigStore.AzureStorageAccountConnectionString = config.GetValue<string>("AzureStorageAccountConnectionString");
-            ConfigStore.GCP_ContrainerName = config.GetValue<string>("GCP_ContrainerName");
+            ConfigStore.GCP_BlobContrainerName = config.GetValue<string>("GCP_ContrainerName");
             ConfigStore.GCP_BlobFileName = config.GetValue<string>("GCP_BlobFileName");
             ConfigStore.GCP_DataSetId = config.GetValue<string>("GCP_DataSetId");
             ConfigStore.GCP_ProjectId = config.GetValue<string>("GCP_ProjectId");

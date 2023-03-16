@@ -25,12 +25,12 @@ namespace Budget.TimerFunction
 
                 log.LogInformation($"ConfigStore Values of projectId:{ConfigStore.GCP_ProjectId}, datasetId:{ConfigStore.GCP_DataSetId}, tableId:{ConfigStore.GCP_TableId}");
 
-                List<GcpTagsModel> objTags = new List<GcpTagsModel>();
+                List<GcpTagsModel.GcpTags> objTags = new List<GcpTagsModel.GcpTags>();
                 
                 
                 GoogleCredential credentials = null;
 
-                using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP_ContrainerName,ConfigStore.GCP_BlobFileName))
+                using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP_BlobContrainerName, ConfigStore.GCP_BlobFileName))
                 {
                     credentials = GoogleCredential.FromStream(stream);
                 }
@@ -39,13 +39,13 @@ namespace Budget.TimerFunction
 
                 log.LogInformation($"GCP Billing Records Date Range from {ConfigStore.GCP_FromDate} to {ConfigStore.GCP_ToDate}");
 
-                List<GcpTagsModel> objTagsData = GetGCPTags(client,log);
-                List<GcpTagsModel> objNoTagsData = GetGCPNoTags(client, log);
+                List<GcpTagsModel.GcpTags> objTagsData = GetGCPTags(client,log);
+                List<GcpTagsModel.GcpTags> objNoTagsData = GetGCPNoTags(client, log);
                 foreach (var objtag in objNoTagsData) {
                     var checkTagdata = objTagsData.FirstOrDefault(x => x.ResourceId == objtag.ResourceId && x.ProjectId == objtag.ProjectId && x.ServiceId == objtag.ServiceId && x.ServiceDesc == objtag.ServiceDesc);
                     if (checkTagdata == null)
                     {
-                        GcpTagsModel objTag = new GcpTagsModel();
+                        GcpTagsModel.GcpTags objTag = new GcpTagsModel.GcpTags();
                         objTag.ServiceId = objtag.ServiceId;
                         objTag.ServiceDesc = objtag.ServiceDesc;
                         objTag.ResourceId = objtag.ResourceId;
@@ -55,7 +55,7 @@ namespace Budget.TimerFunction
                         objTagsData.Add(objTag);
                     }
                 }
-
+                log.LogInformation($"GCP Tags combined rows {objTagsData.Count} returned");
                 GcptoSql.SaveGcpTags(objTagsData, log);
             }
             catch (Exception ex)
@@ -64,9 +64,9 @@ namespace Budget.TimerFunction
                 throw ex; 
             }
         }
-        public List<GcpTagsModel> GetGCPTags(BigQueryClient client, ILogger log)
+        public List<GcpTagsModel.GcpTags> GetGCPTags(BigQueryClient client, ILogger log)
         {
-            List<GcpTagsModel> objTags = new List<GcpTagsModel>();
+            List<GcpTagsModel.GcpTags> objTags = new List<GcpTagsModel.GcpTags>();
             //Build the query
             var query = $"SELECT distinct project.id as ProjectId,service.id as ServiceId,service.description as ServiceDesc,resource.global_name as ResourceId,h.key as TagKey,h.value as TagValue FROM `{ConfigStore.GCP_ProjectId}.{ConfigStore.GCP_DataSetId}.{ConfigStore.GCP_TableId}`,UNNEST(tags) as h";
 
@@ -74,7 +74,7 @@ namespace Budget.TimerFunction
             // Run the query and get the results
             var results = client.ExecuteQuery(query, parameters: null);
 
-            log.LogInformation($"No of GCP Tags rows {results.TotalRows} returned");
+            log.LogInformation($"GCP Tags rows {results.TotalRows} returned");
 
             Dictionary<string, object> rowoDict;
             List<string> fields = new List<string>();
@@ -90,14 +90,14 @@ namespace Budget.TimerFunction
                     rowoDict.Add(col, row[col]);
                 }
                 string gcpBillingJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(rowoDict);
-                var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GcpTagsModel>(gcpBillingJsonData);
+                var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GcpTagsModel.GcpTags>(gcpBillingJsonData);
                 objTags.Add(result);
             }
             return objTags;
         }
-        public List<GcpTagsModel> GetGCPNoTags(BigQueryClient client, ILogger log)
+        public List<GcpTagsModel.GcpTags> GetGCPNoTags(BigQueryClient client, ILogger log)
         {
-            List<GcpTagsModel> objTags = new List<GcpTagsModel>();
+            List<GcpTagsModel.GcpTags> objTags = new List<GcpTagsModel.GcpTags>();
             //Build the query
             //var query = $"SELECT distinct project.id as ProjectId,service.id as ServiceId,service.description as ServiceDesc,resource.global_name as ResourceId,h.key as TagKey,h.value as TagValue FROM `{ConfigStore.GCP_ProjectId}.{ConfigStore.GCP_DataSetId}.{ConfigStore.GCP_TableId}`,UNNEST(tags) as h";
             var query = $"SELECT distinct project.id as ProjectId,service.id as ServiceId,service.description as ServiceDesc,resource.global_name as ResourceId,'' as TagKey,'' as TagValue FROM `{ConfigStore.GCP_ProjectId}.{ConfigStore.GCP_DataSetId}.{ConfigStore.GCP_TableId}`";
@@ -105,7 +105,7 @@ namespace Budget.TimerFunction
             // Run the query and get the results
             var results = client.ExecuteQuery(query, parameters: null);
 
-            log.LogInformation($"No of GCP Tags rows {results.TotalRows} returned");
+            log.LogInformation($"GCP Empty Tags rows {results.TotalRows} returned");
 
             Dictionary<string, object> rowoDict;
             List<string> fields = new List<string>();
@@ -121,7 +121,7 @@ namespace Budget.TimerFunction
                     rowoDict.Add(col, row[col]);
                 }
                 string gcpBillingJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(rowoDict);
-                var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GcpTagsModel>(gcpBillingJsonData);
+                var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GcpTagsModel.GcpTags>(gcpBillingJsonData);
                 objTags.Add(result);
             }
             return objTags;
