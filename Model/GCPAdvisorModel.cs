@@ -4,10 +4,25 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Budget.TimerFunction
+namespace Budget.TimerFunction.GCPAdvisorModel
 {
-
-    public class GCPAdvisorModel
+    public class GCPAdvisor
+    {
+        public string ProjectNumber { get; set; }
+        public string Name { get; set; }
+        public string Location { get; set; }
+        public string Type { get; set; }
+        public string SubType { get; set; }
+        //public List<string> target_resources { get; set; }
+        public string Description { get; set; }
+        public string Category { get; set; }
+        public string CurrencyCode { get; set; }
+        public int? Units { get; set; }
+        public int Nanos { get; set; }
+        public DateTime LastRefreshDate { get; set; }
+        public string Severity { get; set; }
+    }
+    public class GCPAdvisorRecommendation
     {
         public string cloud_entity_type { get; set; }
         public string cloud_entity_id { get; set; }
@@ -19,17 +34,10 @@ namespace Budget.TimerFunction
         public string description { get; set; }
         public DateTime last_refresh_time { get; set; }
         public PrimaryImpact primary_impact { get; set; }
-        //public string state { get; set; }
-        //public Ancestors ancestors { get; set; }
-        //public List<string> associated_insights { get; set; }
-        //public string recommendation_details { get; set; }
+        public string Category { get; set; }       
         public string priority { get; set; }
     }
-    public class Ancestors
-    {
-        public string organization_id { get; set; }
-        public List<string> folder_ids { get; set; }
-    }
+ 
 
     public class Cost
     {
@@ -54,7 +62,20 @@ namespace Budget.TimerFunction
     {
         public string category { get; set; }
         public CostProjection cost_projection { get; set; }
-    } 
+    }
 
+    public class GCPAdvisorInsight
+    {
+        public string cloud_entity_type { get; set; }
+        public string cloud_entity_id { get; set; }
+        public string name { get; set; }
+        public string location { get; set; }
+        public string insight_type { get; set; }
+        public string insight_subtype { get; set; }
+        public string description { get; set; }
+        public DateTime last_refresh_time { get; set; }
+        public string severity { get; set; }
+        public string category { get; set; }
+    }
 
 }

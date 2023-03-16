@@ -23,41 +23,76 @@ namespace Budget.TimerFunction
             {
                 log.LogInformation($"GCP Advisor Timer trigger function executed at: {DateTime.Now}");
 
-                List<GCPAdvisorModel> objAdvisor = new List<GCPAdvisorModel>();
-                
-                
+                List<GCPAdvisorModel.GCPAdvisor> objAdvisorList = new List<GCPAdvisorModel.GCPAdvisor>();
+
+
                 GoogleCredential credentials = null;
 
-                using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP_ContrainerName,ConfigStore.GCP_BlobFileName))
+                using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP_BlobContrainerName, ConfigStore.GCP_BlobFileName))
                 {
                     credentials = GoogleCredential.FromStream(stream);
                 }
 
                 var client = BigQueryClient.Create(ConfigStore.GCP_ProjectId, credentials);
 
-                log.LogInformation($"GCP Billing Records Date Range from {ConfigStore.GCP_FromDate} to {ConfigStore.GCP_ToDate}");
+                var objAdvisorRecommendation = GetGCPAdvisorRecommendationList(client, log);
+                var objAdvisorInsight = GetGCPAdvisorInsightList(client, log);
+                foreach (var objRecommendation in objAdvisorRecommendation)
+                {
+                    GCPAdvisorModel.GCPAdvisor objAdvisor=new GCPAdvisorModel.GCPAdvisor();
+                    objAdvisor.ProjectNumber = objRecommendation.cloud_entity_id;
+                    objAdvisor.Name = objRecommendation.name;
+                    objAdvisor.Description = objRecommendation.description;
+                    objAdvisor.LastRefreshDate = objRecommendation.last_refresh_time;
+                    objAdvisor.Units = objRecommendation.primary_impact.cost_projection.cost.units;
+                    objAdvisor.Nanos = objRecommendation.primary_impact.cost_projection.cost.nanos;
+                    objAdvisor.CurrencyCode = objRecommendation.primary_impact.cost_projection.cost.currency_code;
+                    objAdvisor.Type = objRecommendation.recommender;
+                    objAdvisor.SubType = objRecommendation.recommender_subtype;
+                    objAdvisor.Severity = Helper.GetSeverity(objRecommendation.priority);
+                    objAdvisor.Category = objRecommendation.primary_impact.category;
+                    objAdvisor.Location = objRecommendation.location;
+                    objAdvisorList.Add(objAdvisor);
+                }
 
-                objAdvisor = GetGCPAdvisorList(client,log);
+                foreach (var objInsight in objAdvisorInsight)
+                {
+                    GCPAdvisorModel.GCPAdvisor objAdvisor = new GCPAdvisorModel.GCPAdvisor();
+                    objAdvisor.ProjectNumber = objInsight.cloud_entity_id;
+                    objAdvisor.Name = objInsight.name;
+                    objAdvisor.Description = objInsight.description;
+                    objAdvisor.LastRefreshDate = objInsight.last_refresh_time;
+                    objAdvisor.Units = 0;
+                    objAdvisor.Nanos = 0;
+                    objAdvisor.CurrencyCode = String.Empty; ;
+                    objAdvisor.Type = objInsight.insight_type;
+                    objAdvisor.SubType = objInsight.insight_subtype;
+                    objAdvisor.Severity = Helper.GetSeverity(objInsight.severity);
+                    objAdvisor.Category = objInsight.category;
+                    objAdvisor.Location = objInsight.location;
+                    objAdvisorList.Add(objAdvisor);
+                }
 
-                GcptoSql.SaveGcpAdvisor(objAdvisor, log);
+                log.LogInformation($"GCP Advisor  total no of rows {objAdvisorList.Count} will be insert to sql table");
+                GcptoSql.SaveGcpAdvisor(objAdvisorList, log);
             }
             catch (Exception ex)
             {
                 log.LogError(ex, ex.Message);
-                throw ex; 
+                throw new Exception(ex.Message, ex);
             }
         }
-        public List<GCPAdvisorModel> GetGCPAdvisorList(BigQueryClient client, ILogger log)
+        public List<GCPAdvisorModel.GCPAdvisorRecommendation> GetGCPAdvisorRecommendationList(BigQueryClient client, ILogger log)
         {
-            List<GCPAdvisorModel> objAdvisor = new List<GCPAdvisorModel>();
+            List<GCPAdvisorModel.GCPAdvisorRecommendation> objAdvisor = new List<GCPAdvisorModel.GCPAdvisorRecommendation>();
             // Build the query
-            var query = "SELECT  * FROM eygds-sandbox-cloud-359111.billing_info_1.recommendations_export";
+            var query = "SELECT  * FROM `eygds-sandbox-cloud-359111.billing_info_1.recommendations_export`";
 
 
             // Run the query and get the results
             var results = client.ExecuteQuery(query, parameters: null);
 
-            log.LogInformation($"No of GCP Advisor rows {results.TotalRows} returned");
+            log.LogInformation($"GCP Advisor No of Recommendation rows {results.TotalRows} returned");
 
             Dictionary<string, object> rowoDict;
             List<string> fields = new List<string>();
@@ -73,7 +108,38 @@ namespace Budget.TimerFunction
                     rowoDict.Add(col, row[col]);
                 }
                 string gcpBillingJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(rowoDict);
-                var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GCPAdvisorModel>(gcpBillingJsonData);
+                var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GCPAdvisorModel.GCPAdvisorRecommendation>(gcpBillingJsonData);
+                objAdvisor.Add(result);
+            }
+            return objAdvisor;
+        }
+        public List<GCPAdvisorModel.GCPAdvisorInsight> GetGCPAdvisorInsightList(BigQueryClient client, ILogger log)
+        {
+            List<GCPAdvisorModel.GCPAdvisorInsight> objAdvisor = new List<GCPAdvisorModel.GCPAdvisorInsight>();
+            // Build the query
+            var query = "SELECT  * FROM `eygds-sandbox-cloud-359111.billing_info_1.insights_export`";
+
+
+            // Run the query and get the results
+            var results = client.ExecuteQuery(query, parameters: null);
+
+            log.LogInformation($"GCP Advisor no of Insight rows {results.TotalRows} returned");
+
+            Dictionary<string, object> rowoDict;
+            List<string> fields = new List<string>();
+            foreach (var col in results.Schema.Fields)
+            {
+                fields.Add(col.Name);
+            }
+            foreach (var row in results)
+            {
+                rowoDict = new Dictionary<string, object>();
+                foreach (var col in fields)
+                {
+                    rowoDict.Add(col, row[col]);
+                }
+                string gcpBillingJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(rowoDict);
+                var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GCPAdvisorModel.GCPAdvisorInsight>(gcpBillingJsonData);
                 objAdvisor.Add(result);
             }
             return objAdvisor;

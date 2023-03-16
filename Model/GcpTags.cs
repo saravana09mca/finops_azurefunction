@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Budget.TimerFunction
+namespace Budget.TimerFunction.GcpTagsModel
 {
 
-    public class GcpTagsModel
+    public class GcpTags
     {
         public string ProjectId { get; set; }
         public string ServiceId { get; set; }

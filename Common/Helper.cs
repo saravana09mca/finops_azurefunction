@@ -34,5 +34,25 @@ namespace Budget.TimerFunction
             }
             return number;
         }
+        public static string GetSeverity(string input)
+        { 
+        string severity=string.Empty;
+            switch (input.ToLower()) {
+                case "p1":
+                    severity = "Low";
+                    break;
+                case "p2":
+                    severity = "Medium";
+                    break;
+                case "p3,p4":
+                    severity = "High";
+                    break;
+                default:
+                    severity = input;
+                    break;
+                    
+            }
+            return severity;
+        }
     }
 }

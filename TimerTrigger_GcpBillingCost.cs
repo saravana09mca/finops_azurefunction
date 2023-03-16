@@ -25,12 +25,12 @@ namespace Budget.TimerFunction
 
                 log.LogInformation($"ConfigStore Values of projectId:{ConfigStore.GCP_ProjectId}, datasetId:{ConfigStore.GCP_DataSetId}, tableId:{ConfigStore.GCP_TableId}");
 
-                List<GCPBillingModel> objbilling = new List<GCPBillingModel>();
+                List<GCPBillingCostModel.GCPBillingCost> objbilling = new List<GCPBillingCostModel.GCPBillingCost>();
                 
                 
                 GoogleCredential credentials = null;
 
-                using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP_ContrainerName,ConfigStore.GCP_BlobFileName))
+                using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP_BlobContrainerName, ConfigStore.GCP_BlobFileName))
                 {
                     credentials = GoogleCredential.FromStream(stream);
                 }
@@ -42,13 +42,8 @@ namespace Budget.TimerFunction
                     var date = DateTime.UtcNow.AddDays(ConfigStore.GCP_DataDaysDiff).ToString("yyyy-MM-dd");
                     ConfigStore.GCP_FromDate = ConfigStore.GCP_ToDate = date;
                 }
-                if (GcptoSql.CheckBillingCostDateExists(ConfigStore.GCP_FromDate, ConfigStore.GCP_ToDate))
-                {
-                    log.LogError($"Data already exists from {ConfigStore.GCP_FromDate} to {ConfigStore.GCP_ToDate}");
-                    return;
-                }
 
-                log.LogInformation($"GCP Billing Records Date Range from {ConfigStore.GCP_FromDate} to {ConfigStore.GCP_ToDate}");
+                log.LogInformation($"GCP Billing Records from {ConfigStore.GCP_FromDate}");
 
                 objbilling = GetGCPBillingList(client,log);
 
@@ -60,15 +55,31 @@ namespace Budget.TimerFunction
                 throw ex; 
             }
         }
-        public List<GCPBillingModel> GetGCPBillingList(BigQueryClient client, ILogger log)
+        public List<GCPBillingCostModel.GCPBillingCost> GetGCPBillingList(BigQueryClient client, ILogger log)
         {
-            List<GCPBillingModel> objbilling = new List<GCPBillingModel>();
+            List<GCPBillingCostModel.GCPBillingCost> objbilling = new List<GCPBillingCostModel.GCPBillingCost>();
             // Build the query
-            var query = $"SELECT (cost/currency_conversion_rate) as CostUsd,* FROM {ConfigStore.GCP_ProjectId}.{ConfigStore.GCP_DataSetId}.{ConfigStore.GCP_TableId} where Date(export_time) between '{ConfigStore.GCP_FromDate}' and '{ConfigStore.GCP_ToDate}'";
-
-            //var query = $"SELECT sum(cost),cast(usage_end_time as date)  FROM {ConfigStore.GCP_ProjectId}.{ConfigStore.GCP_DataSetId}.{ConfigStore.GCP_TableId} where project.name='int-ops-cloud-0223' and project.id='int-ops-cloud-0223' and project.number='915729704939' and cast(usage_end_time as date) between '2023-03-1' and '2023-03-10' group by cast(usage_end_time as date)";
-
-            //var query = $"SELECT service.description FROM {ConfigStore.GCP_ProjectId}.{ConfigStore.GCP_DataSetId}.{ConfigStore.GCP_TableId} where project.name='int-ops-cloud-0223' and project.id='int-ops-cloud-0223' and project.number='915729704939' and cast(usage_end_time as date) between '2023-03-7' and '2023-03-7' and sku.description='Networking Traffic Egress GCP Replication within Asia'";
+            var query = $"SELECT distinct " +
+                $"billing_account_id as BillingAccountId," +
+                $"service.id as ServiceId," +
+                $"service.description as ServiceDesc," +
+                $"sku.id as SkuId," +
+                $"sku.description as SkuDesc," +
+                $"project.id as ProjectId," +
+                $"project.number as ProjectNumber," +
+                $"project.name as ProjectName," +
+                $"usage_start_time as UsageStartDate," +
+                $"usage_end_time as Date," +
+                $"export_time as ExportTime," +
+                $"location.location as Location," +
+                $"location.region as Region," +
+                $"resource.name as ResourceName," +
+                $"resource.global_name as ResourceId," +
+                $"cost as Cost," +
+                $"(cost/currency_conversion_rate) as CostUsd," +
+                $"currency as Currency," +
+                $"currency_conversion_rate as CurrencyConversionRate" +
+                $" FROM {ConfigStore.GCP_ProjectId}.{ConfigStore.GCP_DataSetId}.{ConfigStore.GCP_TableId} where Date(export_time)>='{ConfigStore.GCP_FromDate}'";      
 
             // Run the query and get the results
             var results = client.ExecuteQuery(query, parameters: null);
@@ -89,7 +100,7 @@ namespace Budget.TimerFunction
                     rowoDict.Add(col, row[col]);
                 }
                 string gcpBillingJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(rowoDict);
-                var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GCPBillingModel>(gcpBillingJsonData);
+                var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GCPBillingCostModel.GCPBillingCost>(gcpBillingJsonData);
                 objbilling.Add(result);
             }
             return objbilling;

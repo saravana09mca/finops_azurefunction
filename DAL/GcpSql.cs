@@ -6,14 +6,16 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
 using Microsoft.Extensions.Logging;
+
 
 
 namespace Budget.TimerFunction
 {
     public class GcptoSql
     {
-        public static bool SaveBillingCost(List<GCPBillingModel> listGCPDdata, ILogger log)
+        public static bool SaveBillingCost(List<GCPBillingCostModel.GCPBillingCost> listGCPDdata, ILogger log)
         {
             bool result = false;
             try
@@ -41,43 +43,43 @@ namespace Budget.TimerFunction
                 dt.Columns.Add("CurrencyConversionRate");
                 dt.Columns.Add("ResourceName");
                 dt.Columns.Add("ResourceId");
-                dt.Columns.Add("DataInsertDate");
+                dt.Columns.Add("DataInsertDate");           
 
-                foreach (GCPBillingModel data in listGCPDdata)
+                foreach (GCPBillingCostModel.GCPBillingCost data in listGCPDdata)
                 {
 
-                    if (!string.IsNullOrEmpty(data.resource.name))
+                    if (!string.IsNullOrEmpty(data.ResourceName))
                     {
-                        data.resource.name = data.resource.name.Split('/').Last();
+                        data.ResourceName = data.ResourceName.Split('/').Last();
                     }
-                    if (!string.IsNullOrEmpty(data.resource.global_name))
+                    if (!string.IsNullOrEmpty(data.ResourceId))
                     {
-                        data.resource.global_name = data.resource.global_name.Split('/').Last();
+                        data.ResourceId = data.ResourceId.Split('/').Last();
                     }
                     string billingDataId= Guid.NewGuid().ToString();
 
                     DataRow row = dt.NewRow();
                     row["Id"] = null;
                     row["DataId"] = billingDataId;
-                    row["BillingAccountId"] = data.billing_account_id;
-                    row["ProjectId"] = data.project.id;
-                    row["ProjectNumber"] = data.project.number;
-                    row["ProjectName"] = data.project.id;
-                    row["SkuId"] = data.sku.id;
-                    row["SkuDesc"] = data.sku.description;
-                    row["UsageStartDate"] = data.usage_start_time;
-                    row["Date"] = data.usage_end_time;
-                    row["ServiceId"] = data.service.id;
-                    row["ServiceDesc"] = data.service.description;
-                    row["Location"] = data.location.location;
-                    row["Region"] = data.location.region;
-                    row["Cost"] = Helper.ValidateDecimal(data.cost.ToString());
+                    row["BillingAccountId"] = data.BillingAccountId;
+                    row["ProjectId"] = data.ProjectId;
+                    row["ProjectNumber"] = data.ProjectNumber;
+                    row["ProjectName"] = data.ProjectName;
+                    row["SkuId"] = data.SkuId;
+                    row["SkuDesc"] = data.SkuDesc;
+                    row["UsageStartDate"] = data.UsageStartDate;
+                    row["Date"] = data.Date;
+                    row["ServiceId"] = data.ServiceId;
+                    row["ServiceDesc"] = data.ServiceDesc;
+                    row["Location"] = data.Location;
+                    row["Region"] = data.Region;
+                    row["Cost"] = Helper.ValidateDecimal(data.Cost.ToString());
                     row["CostUsd"] = data.CostUsd;
-                    row["ExportTime"] = data.export_time;
-                    row["Currency"] = data.currency;
-                    row["CurrencyConversionRate"] = data.currency_conversion_rate;
-                    row["ResourceName"] = data.resource.name;
-                    row["ResourceId"] = data.resource.global_name;
+                    row["ExportTime"] = data.ExportTime;
+                    row["Currency"] = data.Currency;
+                    row["CurrencyConversionRate"] = data.CurrencyConversionRate;
+                    row["ResourceName"] = data.ResourceName;
+                    row["ResourceId"] = data.ResourceId;
                     row["DataInsertDate"] = DateTime.UtcNow;
                     dt.Rows.Add(row);
                 }
@@ -85,11 +87,28 @@ namespace Budget.TimerFunction
 
                 if (dt.Rows.Count > 0)
                 {
-                    log.LogInformation($"SQL Bulk Copy - No of Rows Data: {dt.Rows.Count}");
-                    SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
-                    bcp.DestinationTableName = "GCPBillingData";
-                    bcp.WriteToServer(dt);
-                    log.LogInformation("SQL Bulk Copy Completed");
+                  
+                    
+                    using (TransactionScope transactionScope = new TransactionScope())
+                    {
+                        try
+                        {
+                            
+                            DeleteGCPBillingcostFromDate(log);
+                            log.LogInformation($"SQL Bulk Copy - No of Rows Data: {dt.Rows.Count}");
+                            SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
+                            bcp.DestinationTableName = "GCPBillingData";
+                            bcp.BatchSize = 10000;
+                            bcp.WriteToServer(dt);
+                            log.LogInformation("SQL Bulk Copy Completed");
+                        }
+                        catch (TransactionException ex)
+                        {
+                            transactionScope.Dispose();
+                            throw new Exception($"Transaction Exception Occured - {ex.Message}");
+                        }
+                        transactionScope.Complete();
+                    }
                 }
                 result = true;
             }
@@ -99,25 +118,40 @@ namespace Budget.TimerFunction
             }
             return result;
         }
-        public static bool CheckBillingCostDateExists(string fromDate, String toDate)
+        public static void DeleteGCPBillingcostFromDate(ILogger log)
         {
+            log.LogInformation($"SQL Delete Process Start");
             var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
-            bool result = false;
-            using (SqlConnection con = new SqlConnection(myConnectionString))
+            int batchSize = 10000;
+            using (SqlConnection connection = new SqlConnection(myConnectionString))
             {
-                con.Open();
-                SqlCommand objSqlCommand = new SqlCommand("select 1 from GCPBillingData where  CAST(ExportTime AS DATE) between '" + fromDate + "' and '" + toDate + "'", con);
-                try
+                connection.Open();
+                // create a SQL command object with the DELETE statement
+                using (SqlCommand command = new SqlCommand("DELETE TOP (@BatchSize) GCPBillingData where cast(ExportTime as date)>='" + ConfigStore.GCP_FromDate + "'", connection))
                 {
-                    result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
+
+                    // add parameter to the command
+                    command.Parameters.AddWithValue("@BatchSize", batchSize);
+
+                    // execute the command to delete the records in batches
+                    int rowsAffected = 0;
+                    while (true)
+                    {
+                        int batchRowsAffected = command.ExecuteNonQuery();
+                        if (batchRowsAffected == 0)
+                        {
+                            break;
+                        }
+                        rowsAffected += batchRowsAffected;
+                    }
+                    log.LogInformation($"Deleted {rowsAffected} rows");
                 }
-                catch (Exception ex)
-                {
-                    con.Close();
-                }
-            }
-            return result;
+                connection.Close();
+            }            
+          
         }
+       
+     
 
         public static bool DeleteGcpTagsExists()
         {
@@ -126,7 +160,7 @@ namespace Budget.TimerFunction
             using (SqlConnection con = new SqlConnection(myConnectionString))
             {
                 con.Open();
-                SqlCommand objSqlCommand = new SqlCommand("delete  GCPBillingDataTags", con);
+                SqlCommand objSqlCommand = new SqlCommand("delete  GCPResourceTags", con);
                 try
                 {
                     result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
@@ -134,11 +168,12 @@ namespace Budget.TimerFunction
                 catch (Exception ex)
                 {
                     con.Close();
+                    throw new Exception(ex.Message, ex);
                 }
             }
             return result;
         }
-        public static bool SaveGcpTags(List<GcpTagsModel> listGCPTagsdata, ILogger log)
+        public static bool SaveGcpTags(List<GcpTagsModel.GcpTags> listGCPTagsdata, ILogger log)
         {
             bool result = false;
             try
@@ -153,7 +188,7 @@ namespace Budget.TimerFunction
                 dt.Columns.Add("Key");
                 dt.Columns.Add("Value");
 
-                foreach (GcpTagsModel data in listGCPTagsdata)
+                foreach (GcpTagsModel.GcpTags data in listGCPTagsdata)
                 {
                     DataRow row = dt.NewRow();
                     row["Id"] = null;
@@ -168,11 +203,12 @@ namespace Budget.TimerFunction
 
                 if (dt.Rows.Count > 0)
                 {
-                    log.LogInformation($"SQL Bulk Copy - No of Rows Data: {dt.Rows.Count}");
+                    log.LogInformation($"GCP Tags - Start deleting existing records ");
                     DeleteGcpTagsExists();
-                    log.LogInformation($"Existing records deleted");
+                    log.LogInformation($"GCP Tags Existing records deleted");
+                    log.LogInformation($"GCP Tags SQL Bulk Copy Start - Count: {dt.Rows.Count}");
                     SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
-                    bcp.DestinationTableName = "GCPBillingDataTags";
+                    bcp.DestinationTableName = "GCPResourceTags";
                     bcp.WriteToServer(dt);
                     log.LogInformation("SQL Bulk Copy Completed");
                 }
@@ -184,7 +220,7 @@ namespace Budget.TimerFunction
             }
             return result;
         }
-        public static bool SaveGcpAdvisor(List<GCPAdvisorModel> listGCPAdvisordata, ILogger log)
+        public static bool SaveGcpAdvisor(List<GCPAdvisorModel.GCPAdvisor> objAdvisor, ILogger log)
         {
             bool result = false;
             try
@@ -195,37 +231,35 @@ namespace Budget.TimerFunction
                 dt.Columns.Add("ProjectNumber");
                 dt.Columns.Add("Name");
                 dt.Columns.Add("Location");
-                dt.Columns.Add("Recommender");
-                dt.Columns.Add("RecommenderSubtype");
+                dt.Columns.Add("Type");
+                dt.Columns.Add("Subtype");
                 dt.Columns.Add("Description");
                 dt.Columns.Add("Category");
                 dt.Columns.Add("Units");
                 dt.Columns.Add("Nanos");
                 dt.Columns.Add("CostInUSD");
-                dt.Columns.Add("Priority");
+                dt.Columns.Add("Severity");
                 dt.Columns.Add("LastRefreshTime");
                 dt.Columns.Add("InsertDate");
 
-                foreach (GCPAdvisorModel data in listGCPAdvisordata)
-                {
-                    //decimal costInNanodollars = Convert.ToDecimal(data.primary_impact.cost_projection.cost.units * 1e9M + data.primary_impact.cost_projection.cost.nanos);
-                    //decimal costInUSD = costInNanodollars / 1e9M;
-                    double? cost = (data.primary_impact.cost_projection.cost.units + (data.primary_impact.cost_projection.cost.nanos / Math.Pow(10, 9)));
+                foreach (GCPAdvisorModel.GCPAdvisor data in objAdvisor)
+                {   
+                    double? cost = (((data.Units == null) ? 0 : data.Units) + (data.Nanos / Math.Pow(10, 9)));
 
                     DataRow row = dt.NewRow();
                     row["Id"] = null;
-                    row["ProjectNumber"] = data.cloud_entity_id;
-                    row["Name"] = data.name;
-                    row["Location"] = data.location;
-                    row["Recommender"] = data.recommender;
-                    row["RecommenderSubtype"] = data.recommender_subtype;
-                    row["Description"] = data.description;
-                    row["Category"] = data.primary_impact.category;
-                    row["Units"] = data.primary_impact.cost_projection.cost.units;
-                    row["Nanos"] = data.primary_impact.cost_projection.cost.nanos;
+                    row["ProjectNumber"] = data.ProjectNumber;
+                    row["Name"] = data.Name;
+                    row["Location"] = data.Location;
+                    row["Type"] = data.Type;
+                    row["Subtype"] = data.SubType;
+                    row["Description"] = data.Description;
+                    row["Category"] = data.Category;
+                    row["Units"] = (data.Units == null)?0: data.Units;
+                    row["Nanos"] = data.Nanos;
                     row["CostInUSD"] = (cost != null)?cost:0.00;
-                    row["Priority"] = data.priority;
-                    row["LastRefreshTime"] = data.last_refresh_time;
+                    row["Severity"] = data.Severity;
+                    row["LastRefreshTime"] = data.LastRefreshDate;
                     row["InsertDate"] = DateTime.UtcNow;
                     dt.Rows.Add(row);
                 }
@@ -233,12 +267,12 @@ namespace Budget.TimerFunction
                 if (dt.Rows.Count > 0)
                 {
                     DeleteGcpAdvisorExistsData();
-                    log.LogInformation($"DeleteGcpAdvisorExistsData Processed");
-                    log.LogInformation($"SQL Bulk Copy for advisor - No of Rows Data: {dt.Rows.Count}");
+                    log.LogInformation($"Gcp Advisor Delete Exists Data Processed");
+                    log.LogInformation($"Gcp Advisor  SQL Bulk Copy Start- Count: {dt.Rows.Count}");
                     SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
                     bcp.DestinationTableName = "GCPAdvisorRecommendation";
                     bcp.WriteToServer(dt);
-                    log.LogInformation("SQL Bulk Copy for advisor completed");
+                    log.LogInformation($"Gcp Advisor  SQL Bulk Copy Completed");
                 }
                 result = true;
             }
@@ -263,6 +297,7 @@ namespace Budget.TimerFunction
                 catch (Exception ex)
                 {
                     con.Close();
+                    throw new Exception(ex.Message,ex);
                 }
             }
             return result;

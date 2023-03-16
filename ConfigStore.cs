@@ -16,7 +16,7 @@ namespace Budget.TimerFunction
         public static DateTime StartDate { get; set; }
 
         public static string AzureStorageAccountConnectionString { get; set; }
-        public static string GCP_ContrainerName { get; set; }
+        public static string GCP_BlobContrainerName { get; set; }
         public static string GCP_BlobFileName { get; set; }
         public static string GCP_DataSetId { get; set; }
         public static string GCP_ProjectId { get; set; }
