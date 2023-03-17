@@ -14,6 +14,22 @@
     "TimerHistory": "0 0 0 5 * *",
     "WeeklyTrigger": "0 0 6 * * MON",
 
+    "AzureStorageAccountConnectionString": "DefaultEndpointsProtocol=https;AccountName=rgfinops002b30c;AccountKey=595YjlSwqrIfYlbxQ4pfiwqG3fR7mlCz4nMrCNEG0iMpckvd3fys8L0ryM8U0sfJ6108mNfwY6r7+AStyRL7QQ==;EndpointSuffix=core.windows.net",
+    "GCP_BlobContrainerName": "gcp-file-transfer",
+    "GCP_BlobFileName": "eygds-sandbox-cloud-359111-8b2f2ba4459e.json",
+    "GCP_ProjectId": "eygds-sandbox-cloud-359111",
+    "GCP_DataSetId": "billing_info_2",
+    "GCP_TableId": "gcp_billing_export_resource_v1_017624_286A43_B13BCC",
+    "GCP_FromDate": "2023-03-01",
+    "GCP_ToDate": "2023-03-05",
+    "GCP_IsManualDateRange": "True",
+    "GCP_DataDaysDiff": -10,
+    "GCPBillingCostTimer": "0 */0 * * * * ",
+    "GCPAdvisorTimer": "0 */0 * * * *",
+    "GCPTagsTimer": "0 */0 * * * *",
+    "GCPUtilizationTimer": "0 */0 * * * *",
+
+
     "DestinationContainerHistory": "historydata-file-transfer",
     "DestinationBlobNameHistory": "testazure/costconsumptiondata/",
 
