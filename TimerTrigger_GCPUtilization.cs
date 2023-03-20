@@ -35,7 +35,9 @@ namespace Budget.TimerFunction
 
                 var client = BigQueryClient.Create(ConfigStore.GCP_ProjectId, credentials);
                 DateTime Date = DateTime.UtcNow.Date.AddDays(-1); //Get previous day start time
-               
+
+                log.LogInformation($"GCP Utilization Data Date {Date.ToString("yyyy-MM-dd")}");
+
                 objUtilization = GetGCPUtilizationList(client, Date.ToString("yyyy-MM-dd"), log);
 
                 GcptoSql.SaveGcpUtilization(objUtilization,Date.ToString("yyyy-MM-dd"), log);
