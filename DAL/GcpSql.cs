@@ -220,7 +220,7 @@ namespace Budget.TimerFunction
             }
             return result;
         }
-        public static bool SaveGcpAdvisor(List<GCPAdvisorModel.GCPAdvisor> objAdvisor, ILogger log)
+        public static bool SaveGcpAdvisor(List<GCPAdvisorModel.GCPAdvisor> objAdvisor,ILogger log)
         {
             bool result = false;
             try
@@ -302,6 +302,77 @@ namespace Budget.TimerFunction
             }
             return result;
         }
+        public static bool SaveGcpUtilization(List<GCPUtilizationModel.GCPUtilization> objUtilization, string date, ILogger log)
+        {
+            bool result = false;
+            try
+            {
+                var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
+                DataTable dt = new DataTable();
+                dt.Columns.Add("Id");
+                dt.Columns.Add("MetricName");
+                dt.Columns.Add("ProjectId");
+                dt.Columns.Add("InstanceId");
+                dt.Columns.Add("Date");
+                dt.Columns.Add("AverageUtilization");
+                dt.Columns.Add("MinmumUtilization");
+                dt.Columns.Add("MaximumUtilization");
+                dt.Columns.Add("InsertDate");
 
+                foreach (GCPUtilizationModel.GCPUtilization data in objUtilization)
+                {
+                   
+
+                    DataRow row = dt.NewRow();
+                    row["Id"] = null;
+                    row["MetricName"] = data.MetricName;
+                    row["ProjectId"] = data.ProjectId;
+                    row["InstanceId"] = data.InstanceId;
+                    row["Date"] = data.Date;
+                    row["AverageUtilization"] = data.AvgUtilization;
+                    row["MinmumUtilization"] = data.MinUtilization;
+                    row["MaximumUtilization"] = data.MaxUtilization;
+                    row["InsertDate"] = DateTime.UtcNow;
+                    dt.Rows.Add(row);
+                }
+
+                if (dt.Rows.Count > 0)
+                {
+                    DeleteGcpUtilizationExistsData(date,log);
+                    log.LogInformation($"Gcp Utilization Delete Exists Data Processed");
+                    log.LogInformation($"Gcp Utilization  SQL Bulk Copy Start- Count: {dt.Rows.Count}");
+                    SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
+                    bcp.DestinationTableName = "GCPUtilization";
+                    bcp.WriteToServer(dt);
+                    log.LogInformation($"Gcp Utilization  SQL Bulk Copy Completed");
+                }
+                result = true;
+            }
+            catch (Exception ex)
+            {
+                log.LogError(exception: ex, ex.Message);
+            }
+            return result;
+        }
+        public static bool DeleteGcpUtilizationExistsData(string date, ILogger log)
+        {
+            var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
+            bool result = false;
+            using (SqlConnection con = new SqlConnection(myConnectionString))
+            {
+                con.Open();
+                SqlCommand objSqlCommand = new SqlCommand("delete GCPUtilization where [date] ='" + date+"'", con);
+                try
+                {
+                    result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
+                }
+                catch (Exception ex)
+                {
+                    con.Close();
+                    throw new Exception(ex.Message, ex);
+                }
+            }
+            return result;
+        }
     }
 }

@@ -33,8 +33,7 @@ namespace Budget.TimerFunction.GCPAdvisorModel
         //public List<string> target_resources { get; set; }
         public string description { get; set; }
         public DateTime last_refresh_time { get; set; }
-        public PrimaryImpact primary_impact { get; set; }
-        public string Category { get; set; }       
+        public PrimaryImpact primary_impact { get; set; } 
         public string priority { get; set; }
     }
  

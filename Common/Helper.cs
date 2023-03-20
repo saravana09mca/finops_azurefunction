@@ -44,7 +44,8 @@ namespace Budget.TimerFunction
                 case "p2":
                     severity = "Medium";
                     break;
-                case "p3,p4":
+                case "p3":
+                case "p4":
                     severity = "High";
                     break;
                 default:

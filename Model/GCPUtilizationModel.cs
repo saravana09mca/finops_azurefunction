@@ -25,11 +25,21 @@ namespace Budget.TimerFunction.GCPUtilizationModel
         public string value { get; set; }
     }
 
-    public class GCPUtilizationModel
+    public class GCPUtilizationList
     {
         public string metricName { get; set; }
         public TimeSeriesDescriptor timeSeriesDescriptor { get; set; }
         public PointData pointData { get; set; }
+    }
+    public class GCPUtilization
+    {
+        public string MetricName { get; set; }
+        public string ProjectId { get; set; }
+        public string InstanceId { get; set; }
+        public string Date { get; set; }
+        public decimal AvgUtilization { get; set; }
+        public decimal MaxUtilization { get; set; }
+        public decimal MinUtilization { get; set; }
     }
 
     public class TimeInterval
@@ -48,7 +58,7 @@ namespace Budget.TimerFunction.GCPUtilizationModel
     {
         public object boolean_value { get; set; }
         public object int64_value { get; set; }
-        public double double_value { get; set; }
+        public decimal double_value { get; set; }
         public object string_value { get; set; }
         public object distribution_value { get; set; }
     }
