@@ -23,7 +23,7 @@ namespace Budget.TimerFunction
             {
                 log.LogInformation($"GCP Utilization function executed at: {DateTime.Now}");
 
-                List<GCPUtilizationModel.GCPUtilizationModel> objUtilization = new List<GCPUtilizationModel.GCPUtilizationModel>();
+                List<GCPUtilizationModel.GCPUtilization> objUtilization = new List<GCPUtilizationModel.GCPUtilization>();
                 
                 
                 GoogleCredential credentials = null;
@@ -34,10 +34,11 @@ namespace Budget.TimerFunction
                 }
 
                 var client = BigQueryClient.Create(ConfigStore.GCP_ProjectId, credentials);
+                DateTime Date = DateTime.UtcNow.Date.AddDays(-2); //Get previous day start time
+               
+                objUtilization = GetGCPUtilizationList(client, Date.ToString("yyyy-MM-dd"), log);
 
-                objUtilization = GetGCPUtilizationList(client,log);
-
-                //GcptoSql.SaveGcpAdvisor(objUtilization, log);
+                GcptoSql.SaveGcpUtilization(objUtilization,Date.ToString("yyyy-MM-dd"), log);
             }
             catch (Exception ex)
             {
@@ -45,17 +46,17 @@ namespace Budget.TimerFunction
                 throw ex; 
             }
         }
-        public List<GCPUtilizationModel.GCPUtilizationModel> GetGCPUtilizationList(BigQueryClient client, ILogger log)
-        {
-            List<GCPUtilizationModel.GCPUtilizationModel> objUtilization = new List<GCPUtilizationModel.GCPUtilizationModel>();
+        public List<GCPUtilizationModel.GCPUtilization> GetGCPUtilizationList(BigQueryClient client,string date, ILogger log)
+        {   
+            List<GCPUtilizationModel.GCPUtilizationList> objUtilization = new List<GCPUtilizationModel.GCPUtilizationList>();
             // Build the query
-            var query = "SELECT * FROM `eygds-sandbox-cloud-359111.metric_export1.mql_metrics1`";
+            var query = "SELECT * FROM `eygds-sandbox-cloud-359111.metric_export.mql_metrics` where cast(pointData.timeInterval.start_time as date)='"+ date + "'";
 
 
             // Run the query and get the results
             var results = client.ExecuteQuery(query, parameters: null);
 
-            log.LogInformation($"No of GCP Advisor rows {results.TotalRows} returned");
+            log.LogInformation($"No of GCP Utilization rows {results.TotalRows} returned");
 
             Dictionary<string, object> rowoDict;
             List<string> fields = new List<string>();
@@ -71,18 +72,28 @@ namespace Budget.TimerFunction
                     rowoDict.Add(col, row[col]);
                 }
                 string gcpBillingJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(rowoDict);
-                var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GCPUtilizationModel.GCPUtilizationModel>(gcpBillingJsonData);
+                var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GCPUtilizationModel.GCPUtilizationList>(gcpBillingJsonData);
                 objUtilization.Add(result);
             }
-            var date = DateTime.UtcNow.AddDays(-2).ToString("yyyy-MM-dd");
-            var listutil = objUtilization.GroupBy(pd => pd.pointData.timeInterval.start_time.ToString("yyyy-MM-dd") == date).ToList();
-
-            //var maxdate = objUtilization.Max(x => x.pointData.timeInterval.start_time.ToString("yyyy-MM-dd"));
-            //var mindate = objUtilization.Min(x => x.pointData.timeInterval.start_time.ToString("yyyy-MM-dd"));
-            var avgValue = objUtilization.GroupBy(pd =>pd.pointData.timeInterval.start_time.ToString("yyyy-MM-dd")== date).Average(x=>x.Average(p=>p.pointData.values.double_value))*100;
-            var maxValue = objUtilization.GroupBy(pd => pd.pointData.timeInterval.start_time.ToString("yyyy-MM-dd") == date).Max(x => x.Max(p => p.pointData.values.double_value)) * 100;
-            var minValue = objUtilization.GroupBy(pd => pd.pointData.timeInterval.start_time.ToString("yyyy-MM-dd") == date).Max(x => x.Min(p => p.pointData.values.double_value)) * 100;
-            return objUtilization;
+            List<GCPUtilizationModel.GCPUtilization> objUtilizationList=new List<GCPUtilizationModel.GCPUtilization>();
+            if (objUtilization.Count > 0)
+            {
+                var listUtilization = objUtilization.GroupBy(x => new { metricName = x.metricName.Replace("compute.googleapis.com/",""), projectId = x.timeSeriesDescriptor.labels[0].value, instanceId = x.timeSeriesDescriptor.labels[1].value as string }).ToList();
+                foreach (var item in listUtilization)
+                {
+                    GCPUtilizationModel.GCPUtilization objData=new GCPUtilizationModel.GCPUtilization();
+                    objData.MetricName = item.Key.metricName;
+                    objData.ProjectId = item.Key.projectId;
+                    objData.InstanceId = item.Key.instanceId;
+                    objData.Date = date;
+                    objData.AvgUtilization = objUtilization.Where(x => x.timeSeriesDescriptor.labels[0].value == item.Key.projectId && x.timeSeriesDescriptor.labels[1].value == item.Key.instanceId).Average(p => p.pointData.values.double_value);
+                    objData.MaxUtilization = objUtilization.Where(x =>x.timeSeriesDescriptor.labels[0].value == item.Key.projectId && x.timeSeriesDescriptor.labels[1].value == item.Key.instanceId).Max(p => p.pointData.values.double_value);
+                    objData.MinUtilization = objUtilization.Where(x => x.timeSeriesDescriptor.labels[0].value == item.Key.projectId && x.timeSeriesDescriptor.labels[1].value == item.Key.instanceId).Min(p => p.pointData.values.double_value);
+                    objUtilizationList.Add(objData);
+                }
+            }
+            log.LogInformation($"GCP Utilization rows {objUtilizationList.Count} grouped");
+            return objUtilizationList;
         }
     }
 }
