@@ -52,8 +52,9 @@ namespace Budget.TimerFunction
         {   
             List<GCPUtilizationModel.GCPUtilizationList> objUtilization = new List<GCPUtilizationModel.GCPUtilizationList>();
             // Build the query
-            var query = "SELECT * FROM `eygds-sandbox-cloud-359111.metric_export.mql_metrics` where cast(pointData.timeInterval.start_time as date)='"+ date + "'";
+            var query = $"SELECT * FROM eygds-sandbox-cloud-359111.metric_export.mql_metrics where cast(pointData.timeInterval.start_time as date)='{date}'";
 
+            log.LogInformation($"GCP Utilization query {query}");
 
             // Run the query and get the results
             var results = client.ExecuteQuery(query, parameters: null);
