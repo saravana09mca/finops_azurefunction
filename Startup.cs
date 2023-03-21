@@ -45,6 +45,14 @@ namespace Budget.TimerFunction
             ConfigStore.GCP_ToDate = config.GetValue<string>("GCP_ToDate");
             ConfigStore.GCP_IsManualDateRange = config.GetValue<bool>("GCP_IsManualDateRange");
             ConfigStore.GCP_DataDaysDiff = config.GetValue<int>("GCP_DataDaysDiff");
+            ConfigStore.GCP_UtilizationDataDateDiff = config.GetValue<int>("GCP_UtilizationDataDateDiff");
+            ConfigStore.GCP_UtilizationDatasetId = config.GetValue<string>("GCP_UtilizationDatasetId");
+            ConfigStore.GCP_UtilizationProjectId = config.GetValue<string>("GCP_UtilizationProjectId");
+            ConfigStore.GCP_UtilizationTableId = config.GetValue<string>("GCP_UtilizationTableId");
+            ConfigStore.GCP_AdvisorProjectId = config.GetValue<string>("GCP_AdvisorProjectId");
+            ConfigStore.GCP_AdvisorDatasetId = config.GetValue<string>("GCP_AdvisorDatasetId");
+            ConfigStore.GCP_AdvisorTableId = config.GetValue<string>("GCP_AdvisorTableId");
+            ConfigStore.GCP_AdvisorInsightsTableId = config.GetValue<string>("GCP_AdvisorInsightsTableId");
         }
 
         public override void Configure(IFunctionsHostBuilder builder)
