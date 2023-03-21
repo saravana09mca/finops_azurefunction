@@ -28,6 +28,7 @@ namespace Budget.TimerFunction
             AmazonS3Client s3Client = new AmazonS3Client(new BasicAWSCredentials(ConfigStore.Aws.AccessKey, ConfigStore.Aws.SecretKey), Amazon.RegionEndpoint.USEast1);
             ListObjectsRequest request = new ListObjectsRequest();
             ListObjectsResponse deleteObjReqlist = new();
+            ListObjectsResponse LatestObjReqlist = new();
             bool IsBulkInsertResult = false;
 
             request.BucketName = ConfigStore.Aws.BucketName;
@@ -45,9 +46,24 @@ namespace Budget.TimerFunction
                 {
                     if (obj.Size != 0)
                     {
-                        if (obj.LastModified == DateTime.Today)
+                        if (obj.LastModified.ToString("yyyy/MM/dd") == DateTime.Today.ToString("yyyy/MM/dd"))
                         {
-                            var response = s3Client.GetObjectAsync(ConfigStore.Aws.BucketName, obj.Key).Result;
+                            //Add Latest object to Latest Object List
+                            LatestObjReqlist.S3Objects.Add(obj);
+                        }
+                        else
+                        {
+                            //Add old object to deleteObject List
+                            deleteObjReqlist.S3Objects.Add(obj);
+                        }
+                    } 
+                }
+                        //Select the latest Object based on LastModified
+                        S3Object LatestObject = LatestObjReqlist.S3Objects.OrderBy(a => a.LastModified).LastOrDefault();
+                        if (LatestObject != null)
+                        {
+                            //Extract the Data from the CSV file
+                            var response = s3Client.GetObjectAsync(ConfigStore.Aws.BucketName, LatestObject.Key).Result;
                             using StreamReader reader = new StreamReader(response.ResponseStream);
                             using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
                             using var dr = new CsvDataReader(csv);
@@ -62,19 +78,13 @@ namespace Budget.TimerFunction
                                 sourceData.Rows.Add(row);
                             }
                         }
-                        else
-                        {
-                            //Add old object to deleteObject List
-                            deleteObjReqlist.S3Objects.Add(obj);
-                        }
                         if (sourceData.Rows.Count > 0)
                         {
                             using (SqlConnection sourceConnection = new SqlConnection(ConfigStore.SQLConnectionString))
                             {
                                 sourceConnection.Open();
-
-                                // Check the count of existing data from the source table
-                                SqlCommand commandRowCount = new SqlCommand("select count(*) FROM " + "dbo.AWSTagDetails;", sourceConnection);
+                                // Perform an Delete operation for old data from the source table.
+                                SqlCommand commandRowCount = new SqlCommand("Truncate table  " + "dbo.AWSTagDetails;", sourceConnection);
                                 long countStart = System.Convert.ToInt32(commandRowCount.ExecuteScalar());
                                 if (countStart == 0)
                                 {
@@ -84,17 +94,11 @@ namespace Budget.TimerFunction
                                     bcp.WriteToServer(sourceData);
                                     IsBulkInsertResult = true;
                                 }
-                                else
-                                {
-                                    // Perform an Delete operation for old data from the source table.
-                                    commandRowCount = new SqlCommand("Truncate table  " + "dbo.AWSTagDetails;", sourceConnection);
-                                    commandRowCount.ExecuteScalar();
-                                }
                                 sourceConnection.Close();
                             }
                         }
                         //After succesful bulk insert delete old files from s3 bucket
-                        if (IsBulkInsertResult == true)
+                        if (IsBulkInsertResult == true && deleteObjReqlist.S3Objects.Count > 0)
                         {
                             foreach (S3Object oldObj in deleteObjReqlist.S3Objects)
                             {
@@ -108,8 +112,6 @@ namespace Budget.TimerFunction
                                 await s3Client.DeleteObjectAsync(deleteObjReq);
                             }
                         }
-                    }
-                }
             }
 
             catch (Exception Excep)

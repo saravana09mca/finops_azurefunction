@@ -45,8 +45,8 @@
     "AwsSecretKey": "7U0D2a/OSzSEvsXIoNWUVj85vRMIIOWlslG+fcSz",
     "AwsBucketName": "finops-pov",
     "AwsRegion": "us-east-1",
-    "AwsDailyTimer": "0 0 6 * * *",
-    "AwsWeekelyTimer": "0 30 9 * * Mon",
+    "AwsDailyTimer": "0 0 1 * * *",
+    "AwsWeekelyTimer": "0 0 9 * * Mon",
 
     "stfinocostconsumption_STORAGE": "DefaultEndpointsProtocol=https;AccountName=stfinocostconsumption;AccountKey=FrJJvOuGH4sv9JbYx1IzX/kFmFemzK3CeauouxbnH9ma4JfGBRzzZOldEQ0MqB+ecfL++z2RK+Z9+AStDrFYYA==;EndpointSuffix=core.windows.net",
     "sqlconnectionstring": "Server=tcp:sqlserver-finops.database.windows.net,1433;Initial Catalog=sql-finops-consumptiondata;Persist Security Info=False;User ID=finopsadmin;Password=finops@123;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
