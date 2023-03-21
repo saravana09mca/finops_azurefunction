@@ -34,7 +34,7 @@ namespace Budget.TimerFunction
                 }
 
                 var client = BigQueryClient.Create(ConfigStore.GCP_ProjectId, credentials);
-                DateTime Date = DateTime.UtcNow.Date.AddDays(-1); //Get previous day start time
+                DateTime Date = DateTime.UtcNow.Date.AddDays(ConfigStore.GCP_UtilizationDataDateDiff); //Get previous day start time
 
                 log.LogInformation($"GCP Utilization Data Date {Date.ToString("yyyy-MM-dd")}");
 
@@ -52,9 +52,9 @@ namespace Budget.TimerFunction
         {   
             List<GCPUtilizationModel.GCPUtilizationList> objUtilization = new List<GCPUtilizationModel.GCPUtilizationList>();
             // Build the query
-            var query = $"SELECT * FROM eygds-sandbox-cloud-359111.metric_export.mql_metrics where cast(pointData.timeInterval.start_time as date)='{date}'";
+            var query = $"SELECT * FROM {ConfigStore.GCP_UtilizationProjectId}.{ConfigStore.GCP_UtilizationDatasetId}.{ConfigStore.GCP_UtilizationTableId} where cast(pointData.timeInterval.start_time as date)='{date}'";
 
-            log.LogInformation($"GCP Utilization query {query}");
+            log.LogInformation($"GCP Utilization query '{query}'");
 
             // Run the query and get the results
             var results = client.ExecuteQuery(query, parameters: null);

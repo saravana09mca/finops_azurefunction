@@ -25,5 +25,13 @@ namespace Budget.TimerFunction
         public static string GCP_ToDate { get; set; }
         public static int GCP_DataDaysDiff { get; set; }
         public static bool GCP_IsManualDateRange { get; set; }
+        public static int GCP_UtilizationDataDateDiff { get; set; }
+        public static string GCP_UtilizationProjectId { get; set; }
+        public static string GCP_UtilizationDatasetId { get; set; }
+        public static string GCP_UtilizationTableId { get; set; }
+        public static string GCP_AdvisorProjectId { get; set; }
+        public static string GCP_AdvisorDatasetId { get; set; }
+        public static string GCP_AdvisorTableId { get; set; }
+        public static string GCP_AdvisorInsightsTableId { get; set; }
     }
 }
