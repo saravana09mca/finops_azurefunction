@@ -1,3 +1,4 @@
+using Amazon;
 using System;
 
 namespace Budget.TimerFunction
@@ -33,5 +34,15 @@ namespace Budget.TimerFunction
         public static string GCP_AdvisorDatasetId { get; set; }
         public static string GCP_AdvisorTableId { get; set; }
         public static string GCP_AdvisorInsightsTableId { get; set; }
+
+        public static string SQLConnectionString { get; } = Environment.GetEnvironmentVariable("sqlconnectionstring");
+
+        public static class Aws
+        {
+            public static string AccessKey { get; } = Environment.GetEnvironmentVariable("AwsAccessKey");
+            public static string SecretKey { get; } = Environment.GetEnvironmentVariable("AwsSecretKey");
+            public static string BucketName { get; } = Environment.GetEnvironmentVariable("AwsBucketName");
+            public static RegionEndpoint Region { get; } = RegionEndpoint.GetBySystemName(Environment.GetEnvironmentVariable("AwsRegion") ?? RegionEndpoint.USEast1.SystemName);
+        }
     }
 }
