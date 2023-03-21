@@ -86,7 +86,7 @@ namespace Budget.TimerFunction
         {
             List<GCPAdvisorModel.GCPAdvisorRecommendation> objAdvisor = new List<GCPAdvisorModel.GCPAdvisorRecommendation>();
             // Build the query
-            var query = $"SELECT  * FROM {ConfigStore.GCP_AdvisorProjectId}.{ConfigStore.GCP_AdvisorDatasetId}.{ConfigStore.GCP_AdvisorTableId}";
+            var query = $"SELECT * FROM `{ConfigStore.GCP_AdvisorProjectId}.{ConfigStore.GCP_AdvisorDatasetId}.{ConfigStore.GCP_AdvisorTableId}`";
 
 
             // Run the query and get the results
@@ -117,7 +117,7 @@ namespace Budget.TimerFunction
         {
             List<GCPAdvisorModel.GCPAdvisorInsight> objAdvisor = new List<GCPAdvisorModel.GCPAdvisorInsight>();
             // Build the query
-            var query = $"SELECT  * FROM {ConfigStore.GCP_AdvisorProjectId}.{ConfigStore.GCP_AdvisorDatasetId}.{ConfigStore.GCP_AdvisorInsightsTableId}";
+            var query = $"SELECT * FROM `{ConfigStore.GCP_AdvisorProjectId}.{ConfigStore.GCP_AdvisorDatasetId}.{ConfigStore.GCP_AdvisorInsightsTableId}`";
 
 
             // Run the query and get the results

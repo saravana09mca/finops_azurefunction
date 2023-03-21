@@ -14,9 +14,9 @@ using System.Linq;
 
 namespace Budget.TimerFunction
 {
-    public class TimerTrigger_GcpUtilizatipn
+    public class TimerTrigger_GcpUtilization
     {
-        [FunctionName("TimerTrigger_GcpUtilizatipn")]
+        [FunctionName("TimerTrigger_GcpUtilization")]
         public void Run([TimerTrigger("%GCPUtilizationTimer%")] TimerInfo myTimer, ILogger log)
         {
             try
