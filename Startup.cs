@@ -2,6 +2,10 @@ using System.IO;
 using System;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Amazon.S3;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 
 [assembly: FunctionsStartup(typeof(Budget.TimerFunction.Startup))]
 
@@ -53,10 +57,33 @@ namespace Budget.TimerFunction
             ConfigStore.GCP_AdvisorDatasetId = config.GetValue<string>("GCP_AdvisorDatasetId");
             ConfigStore.GCP_AdvisorTableId = config.GetValue<string>("GCP_AdvisorTableId");
             ConfigStore.GCP_AdvisorInsightsTableId = config.GetValue<string>("GCP_AdvisorInsightsTableId");
+
         }
 
         public override void Configure(IFunctionsHostBuilder builder)
-        {   
+        {
+            builder.Services.AddSingleton<IAmazonS3>(AmazonS3ClientCreate);
+        }
+
+        private static IAmazonS3 AmazonS3ClientCreate(IServiceProvider serviceProvider)
+        {
+            var validationErrors = ValidateAwsConfig().ToList();
+            if (validationErrors.Any())
+                throw new InvalidOperationException(string.Join(Environment.NewLine, validationErrors));
+
+            return new AmazonS3Client(ConfigStore.Aws.AccessKey, ConfigStore.Aws.SecretKey, ConfigStore.Aws.Region);
+        }
+
+        private static IEnumerable<string> ValidateAwsConfig()
+        {
+            if (string.IsNullOrEmpty(ConfigStore.Aws.AccessKey))
+                yield return "Configuration setting 'AwsAccessKey' does not have a value set";
+
+            if (string.IsNullOrEmpty(ConfigStore.Aws.SecretKey))
+                yield return "Configuration setting 'AwsSecretKey' does not have a value set";
+
+            if (string.IsNullOrEmpty(ConfigStore.Aws.BucketName))
+                yield return "Configuration setting 'AwsBucketName' does not have a value set";
         }
     }
 }
