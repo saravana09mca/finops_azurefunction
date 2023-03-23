@@ -55,7 +55,7 @@ namespace Budget.TimerFunction
 
                         if(dt.Date == DateTime.Now.Date.AddDays(-1))
                         {
-                            sourceData.Rows.Add(null, splits[24], splits[23], splits[29], splits[7], dt, 
+                            sourceData.Rows.Add(null, splits[24], splits[25], splits[29], splits[7], dt, 
                             splits[19], splits[20], splits[37], splits[39], splits[40], splits[32],
                             splits[30], splits [45], splits[46], splits[16], splits[13]);
                         }
