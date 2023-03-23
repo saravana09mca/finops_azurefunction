@@ -23,21 +23,21 @@ namespace Budget.TimerFunction
             {
                 log.LogInformation($"GCP Tags trigger function executed at: {DateTime.Now}");
 
-                log.LogInformation($"ConfigStore Values of projectId:{ConfigStore.GCP_ProjectId}, datasetId:{ConfigStore.GCP_DataSetId}, tableId:{ConfigStore.GCP_TableId}");
+                log.LogInformation($"ConfigStore Values of projectId:{ConfigStore.GCP.GCP_ProjectId}, datasetId:{ConfigStore.GCP.GCP_DataSetId}, tableId:{ConfigStore.GCP.GCP_TableId}");
 
                 List<GcpTagsModel.GcpTags> objTags = new List<GcpTagsModel.GcpTags>();
                 
                 
                 GoogleCredential credentials = null;
 
-                using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP_BlobContrainerName, ConfigStore.GCP_BlobFileName))
+                using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP.GCP_BlobContrainerName, ConfigStore.GCP.GCP_BlobFileName))
                 {
                     credentials = GoogleCredential.FromStream(stream);
                 }
 
-                var client = BigQueryClient.Create(ConfigStore.GCP_ProjectId, credentials);
+                var client = BigQueryClient.Create(ConfigStore.GCP.GCP_ProjectId, credentials);
 
-                log.LogInformation($"GCP Billing Records Date Range from {ConfigStore.GCP_FromDate} to {ConfigStore.GCP_ToDate}");
+                log.LogInformation($"GCP Billing Records Date Range from {ConfigStore.GCP.GCP_FromDate} to {ConfigStore.GCP.GCP_ToDate}");
 
                 List<GcpTagsModel.GcpTags> objTagsData = GetGCPTags(client,log);
                 List<GcpTagsModel.GcpTags> objNoTagsData = GetGCPNoTags(client, log);
@@ -68,7 +68,7 @@ namespace Budget.TimerFunction
         {
             List<GcpTagsModel.GcpTags> objTags = new List<GcpTagsModel.GcpTags>();
             //Build the query
-            var query = $"SELECT distinct project.id as ProjectId,service.id as ServiceId,service.description as ServiceDesc,resource.global_name as ResourceId,h.key as TagKey,h.value as TagValue FROM `{ConfigStore.GCP_ProjectId}.{ConfigStore.GCP_DataSetId}.{ConfigStore.GCP_TableId}`,UNNEST(tags) as h";
+            var query = $"SELECT distinct project.id as ProjectId,service.id as ServiceId,service.description as ServiceDesc,resource.global_name as ResourceId,h.key as TagKey,h.value as TagValue FROM `{ConfigStore.GCP.GCP_ProjectId}.{ConfigStore.GCP.GCP_DataSetId}.{ConfigStore.GCP.GCP_TableId}`,UNNEST(tags) as h";
 
 
             // Run the query and get the results
@@ -100,7 +100,7 @@ namespace Budget.TimerFunction
             List<GcpTagsModel.GcpTags> objTags = new List<GcpTagsModel.GcpTags>();
             //Build the query
             //var query = $"SELECT distinct project.id as ProjectId,service.id as ServiceId,service.description as ServiceDesc,resource.global_name as ResourceId,h.key as TagKey,h.value as TagValue FROM `{ConfigStore.GCP_ProjectId}.{ConfigStore.GCP_DataSetId}.{ConfigStore.GCP_TableId}`,UNNEST(tags) as h";
-            var query = $"SELECT distinct project.id as ProjectId,service.id as ServiceId,service.description as ServiceDesc,resource.global_name as ResourceId,'' as TagKey,'' as TagValue FROM `{ConfigStore.GCP_ProjectId}.{ConfigStore.GCP_DataSetId}.{ConfigStore.GCP_TableId}`";
+            var query = $"SELECT distinct project.id as ProjectId,service.id as ServiceId,service.description as ServiceDesc,resource.global_name as ResourceId,'' as TagKey,'' as TagValue FROM `{ConfigStore.GCP.GCP_ProjectId}.{ConfigStore.GCP.GCP_DataSetId}.{ConfigStore.GCP.GCP_TableId}`";
 
             // Run the query and get the results
             var results = client.ExecuteQuery(query, parameters: null);
