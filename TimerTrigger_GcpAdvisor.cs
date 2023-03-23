@@ -28,12 +28,12 @@ namespace Budget.TimerFunction
 
                 GoogleCredential credentials = null;
 
-                using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP_BlobContrainerName, ConfigStore.GCP_BlobFileName))
+                using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP.GCP_BlobContrainerName, ConfigStore.GCP.GCP_BlobFileName))
                 {
                     credentials = GoogleCredential.FromStream(stream);
                 }
 
-                var client = BigQueryClient.Create(ConfigStore.GCP_ProjectId, credentials);
+                var client = BigQueryClient.Create(ConfigStore.GCP.GCP_ProjectId, credentials);
 
                 var objAdvisorRecommendation = GetGCPAdvisorRecommendationList(client, log);
                 var objAdvisorInsight = GetGCPAdvisorInsightList(client, log);
@@ -86,7 +86,7 @@ namespace Budget.TimerFunction
         {
             List<GCPAdvisorModel.GCPAdvisorRecommendation> objAdvisor = new List<GCPAdvisorModel.GCPAdvisorRecommendation>();
             // Build the query
-            var query = $"SELECT * FROM `{ConfigStore.GCP_AdvisorProjectId}.{ConfigStore.GCP_AdvisorDatasetId}.{ConfigStore.GCP_AdvisorTableId}`";
+            var query = $"SELECT * FROM `{ConfigStore.GCP.GCP_AdvisorProjectId}.{ConfigStore.GCP.GCP_AdvisorDatasetId}.{ConfigStore.GCP.GCP_AdvisorTableId}`";
 
 
             // Run the query and get the results
@@ -117,7 +117,7 @@ namespace Budget.TimerFunction
         {
             List<GCPAdvisorModel.GCPAdvisorInsight> objAdvisor = new List<GCPAdvisorModel.GCPAdvisorInsight>();
             // Build the query
-            var query = $"SELECT * FROM `{ConfigStore.GCP_AdvisorProjectId}.{ConfigStore.GCP_AdvisorDatasetId}.{ConfigStore.GCP_AdvisorInsightsTableId}`";
+            var query = $"SELECT * FROM `{ConfigStore.GCP.GCP_AdvisorProjectId}.{ConfigStore.GCP.GCP_AdvisorDatasetId}.{ConfigStore.GCP.GCP_AdvisorInsightsTableId}`";
 
 
             // Run the query and get the results

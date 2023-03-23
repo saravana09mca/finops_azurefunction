@@ -28,6 +28,8 @@
     "GCPAdvisorTimer": "0 */0 * * * *",
     "GCPTagsTimer": "0 */0 * * * *",
     "GCPUtilizationTimer": "0 */0 * * * *",
+    "GCPBudgetTimer": "0 */0 * * * *",
+
     "GCP_UtilizationDataDateDiff": "-1",
     "GCP_UtilizationProjectId": "eygds-sandbox-cloud-359111",
     "GCP_UtilizationDatasetId": "metric_export",
@@ -37,6 +39,10 @@
     "GCP_AdvisorDatasetId": "billing_info_1",
     "GCP_AdvisorTableId": "recommendations_export",
     "GCP_AdvisorInsightsTableId": "insights_export",
+
+    "GCP_BudgetProjectId": "eygds-sandbox-cloud-359111",
+    "GCP_BudgetDatasetId": "test_vm",
+    "GCP_BudgetTableId": "pubsub_bq_budget",
 
     "DestinationContainerHistory": "historydata-file-transfer",
     "DestinationBlobNameHistory": "testazure/costconsumptiondata/",

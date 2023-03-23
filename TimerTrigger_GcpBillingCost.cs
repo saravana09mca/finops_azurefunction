@@ -23,27 +23,27 @@ namespace Budget.TimerFunction
             {
                 log.LogInformation($"GCP Timer trigger function executed at: {DateTime.Now}");
 
-                log.LogInformation($"ConfigStore Values of projectId:{ConfigStore.GCP_ProjectId}, datasetId:{ConfigStore.GCP_DataSetId}, tableId:{ConfigStore.GCP_TableId}");
+                log.LogInformation($"ConfigStore Values of projectId:{ConfigStore.GCP.GCP_ProjectId}, datasetId:{ConfigStore.GCP.GCP_DataSetId}, tableId:{ConfigStore.GCP.GCP_TableId}");
 
                 List<GCPBillingCostModel.GCPBillingCost> objbilling = new List<GCPBillingCostModel.GCPBillingCost>();
                 
                 
                 GoogleCredential credentials = null;
 
-                using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP_BlobContrainerName, ConfigStore.GCP_BlobFileName))
+                using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP.GCP_BlobContrainerName, ConfigStore.GCP.GCP_BlobFileName))
                 {
                     credentials = GoogleCredential.FromStream(stream);
                 }
 
-                var client = BigQueryClient.Create(ConfigStore.GCP_ProjectId, credentials);
+                var client = BigQueryClient.Create(ConfigStore.GCP.GCP_ProjectId, credentials);
 
-                if (!ConfigStore.GCP_IsManualDateRange)
+                if (!ConfigStore.GCP.GCP_IsManualDateRange)
                 {
-                    var date = DateTime.UtcNow.AddDays(ConfigStore.GCP_DataDaysDiff).ToString("yyyy-MM-dd");
-                    ConfigStore.GCP_FromDate = ConfigStore.GCP_ToDate = date;
+                    var date = DateTime.UtcNow.AddDays(ConfigStore.GCP.GCP_DataDaysDiff).ToString("yyyy-MM-dd");
+                    ConfigStore.GCP.GCP_FromDate = ConfigStore.GCP.GCP_ToDate = date;
                 }
 
-                log.LogInformation($"GCP Billing Records from {ConfigStore.GCP_FromDate}");
+                log.LogInformation($"GCP Billing Records from {ConfigStore.GCP.GCP_FromDate}");
 
                 objbilling = GetGCPBillingList(client,log);
 
@@ -79,7 +79,7 @@ namespace Budget.TimerFunction
                 $"(cost/currency_conversion_rate) as CostUsd," +
                 $"currency as Currency," +
                 $"currency_conversion_rate as CurrencyConversionRate" +
-                $" FROM {ConfigStore.GCP_ProjectId}.{ConfigStore.GCP_DataSetId}.{ConfigStore.GCP_TableId} where Date(export_time)>='{ConfigStore.GCP_FromDate}'";      
+                $" FROM {ConfigStore.GCP.GCP_ProjectId}.{ConfigStore.GCP.GCP_DataSetId}.{ConfigStore.GCP.GCP_TableId} where Date(export_time)>='{ConfigStore.GCP.GCP_FromDate}'";      
 
             // Run the query and get the results
             var results = client.ExecuteQuery(query, parameters: null);

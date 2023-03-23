@@ -127,7 +127,7 @@ namespace Budget.TimerFunction
             {
                 connection.Open();
                 // create a SQL command object with the DELETE statement
-                using (SqlCommand command = new SqlCommand("DELETE TOP (@BatchSize) GCPBillingData where cast(ExportTime as date)>='" + ConfigStore.GCP_FromDate + "'", connection))
+                using (SqlCommand command = new SqlCommand("DELETE TOP (@BatchSize) GCPBillingData where cast(ExportTime as date)>='" + ConfigStore.GCP.GCP_FromDate + "'", connection))
                 {
 
                     // add parameter to the command
@@ -354,6 +354,7 @@ namespace Budget.TimerFunction
             }
             return result;
         }
+     
         public static bool DeleteGcpUtilizationExistsData(string date, ILogger log)
         {
             var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
@@ -362,6 +363,74 @@ namespace Budget.TimerFunction
             {
                 con.Open();
                 SqlCommand objSqlCommand = new SqlCommand("delete GCPUtilization where [date] ='" + date+"'", con);
+                try
+                {
+                    result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
+                }
+                catch (Exception ex)
+                {
+                    con.Close();
+                    throw new Exception(ex.Message, ex);
+                }
+            }
+            return result;
+        }
+        public static bool SaveGcpBudget(List<GcpBudgetModel.GcpBudget> objBudgetList, string date, ILogger log)
+        {
+            bool result = false;
+            try
+            {
+                var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
+                DataTable dt = new DataTable();
+                dt.Columns.Add("Id");
+                dt.Columns.Add("BudgetName");
+                dt.Columns.Add("Date");
+                dt.Columns.Add("BudgetAmount");
+                dt.Columns.Add("Cost");
+                dt.Columns.Add("BudgetAmountType");
+                dt.Columns.Add("CurrencyCode");
+                dt.Columns.Add("InsertDate");
+
+                foreach (GcpBudgetModel.GcpBudget data in objBudgetList)
+                {
+                    DataRow row = dt.NewRow();
+                    row["Id"] = null;
+                    row["BudgetName"] = data.budgetDisplayName;
+                    row["Date"] = data.costIntervalStart;
+                    row["BudgetAmount"] = data.budgetAmount;
+                    row["Cost"] = data.costAmount;
+                    row["BudgetAmountType"] = data.budgetAmountType;
+                    row["CurrencyCode"] = data.currencyCode;
+                    row["InsertDate"] = DateTime.UtcNow;
+                    dt.Rows.Add(row);
+                }
+
+                if (dt.Rows.Count > 0)
+                {
+                    DeleteGcpBudgetData(date,log);
+                    log.LogInformation($"Gcp Budget Delete Exists Data Processed");
+                    log.LogInformation($"Gcp Budget  SQL Bulk Copy Start- Count: {dt.Rows.Count}");
+                    SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
+                    bcp.DestinationTableName = "GCPBudgetData";
+                    bcp.WriteToServer(dt);
+                    log.LogInformation($"Gcp Budget SQL Bulk Copy Completed");
+                }
+                result = true;
+            }
+            catch (Exception ex)
+            {
+                log.LogError(exception: ex, ex.Message);
+            }
+            return result;
+        }
+        public static bool DeleteGcpBudgetData(string date, ILogger log)
+        {
+            var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
+            bool result = false;
+            using (SqlConnection con = new SqlConnection(myConnectionString))
+            {
+                con.Open();
+                SqlCommand objSqlCommand = new SqlCommand("delete GCPBudgetData where [date] ='" + date + "'", con);
                 try
                 {
                     result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
