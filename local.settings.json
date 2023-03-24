@@ -29,6 +29,7 @@
     "GCPTagsTimer": "0 */0 * * * *",
     "GCPUtilizationTimer": "0 */0 * * * *",
     "GCPBudgetTimer": "0 */0 * * * *",
+    "GCPOrphanedTimer": "0 */0 * * * *",
 
     "GCP_UtilizationDataDateDiff": "-1",
     "GCP_UtilizationProjectId": "eygds-sandbox-cloud-359111",
@@ -51,7 +52,7 @@
     "AwsSecretKey": "7U0D2a/OSzSEvsXIoNWUVj85vRMIIOWlslG+fcSz",
     "AwsBucketName": "finops-pov",
     "AwsRegion": "us-east-1",
-    "AwsDailyTimer": "0 0 1 * * *",
+    "AwsDailyTimer": "0 */0 * * * *",
     "AwsWeekelyTimer": "0 0 9 * * Mon",
     "AwsCustomTimer": "0 */1 * * * *",
 

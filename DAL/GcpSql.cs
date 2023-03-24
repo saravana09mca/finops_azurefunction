@@ -430,7 +430,79 @@ namespace Budget.TimerFunction
             using (SqlConnection con = new SqlConnection(myConnectionString))
             {
                 con.Open();
-                SqlCommand objSqlCommand = new SqlCommand("delete GCPBudgetData where [date] ='" + date + "'", con);
+                SqlCommand objSqlCommand = new SqlCommand("truncate table GCPBudgetData where [date] ='" + date + "'", con);
+                try
+                {
+                    result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
+                }
+                catch (Exception ex)
+                {
+                    con.Close();
+                    throw new Exception(ex.Message, ex);
+                }
+            }
+            return result;
+        }
+        public static bool SaveGcpOrphaned(List<GCPAdvisorModel.GCPAdvisor> objAdvisor, ILogger log)
+        {
+            bool result = false;
+            try
+            {
+                var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
+                DataTable dt = new DataTable();
+                dt.Columns.Add("Id");
+                dt.Columns.Add("ProjectNumber");
+                dt.Columns.Add("Name");
+                dt.Columns.Add("Location");
+                dt.Columns.Add("Type");
+                dt.Columns.Add("Description");
+                dt.Columns.Add("Category");
+                dt.Columns.Add("LastRefreshTime");
+                dt.Columns.Add("InsertDate");
+
+                foreach (GCPAdvisorModel.GCPAdvisor data in objAdvisor)
+                {
+                    double? cost = (((data.Units == null) ? 0 : data.Units) + (data.Nanos / Math.Pow(10, 9)));
+
+                    DataRow row = dt.NewRow();
+                    row["Id"] = null;
+                    row["ProjectNumber"] = data.ProjectNumber;
+                    row["Name"] = data.Name;
+                    row["Location"] = data.Location;
+                    row["Type"] = data.Type;
+                    row["Description"] = data.Description;
+                    row["Category"] = data.Category;
+                    row["LastRefreshTime"] = data.LastRefreshDate;
+                    row["InsertDate"] = DateTime.UtcNow;
+                    dt.Rows.Add(row);
+                }
+
+                if (dt.Rows.Count > 0)
+                {
+                    DeleteGcpOrphanedExistsData();
+                    log.LogInformation($"Gcp Orphaned Delete Exists Data Processed");
+                    log.LogInformation($"Gcp Orphaned SQL Bulk Copy Start- Count: {dt.Rows.Count}");
+                    SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
+                    bcp.DestinationTableName = "GCPOrhpanedData";
+                    bcp.WriteToServer(dt);
+                    log.LogInformation($"Gcp Orphaned SQL Bulk Copy Completed");
+                }
+                result = true;
+            }
+            catch (Exception ex)
+            {
+                log.LogError(exception: ex, ex.Message);
+            }
+            return result;
+        }
+        public static bool DeleteGcpOrphanedExistsData()
+        {
+            var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
+            bool result = false;
+            using (SqlConnection con = new SqlConnection(myConnectionString))
+            {
+                con.Open();
+                SqlCommand objSqlCommand = new SqlCommand("truncate table GCPOrhpanedData", con);
                 try
                 {
                     result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
