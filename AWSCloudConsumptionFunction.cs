@@ -136,17 +136,17 @@ namespace AzureFunction
                         {
                             sourceConnection.Open();
                             // Check the count of existing data from the source table
-                            SqlCommand commandRowCount = new SqlCommand("select count(*) FROM dbo.AWSCloudConsumptionTest where CreatedOn >='" + startDate.ToString("yyyy/MM/dd") + "';", sourceConnection);
+                            SqlCommand commandRowCount = new SqlCommand("select count(*) FROM dbo.AWSCloudConsumption where CreatedOn >='" + startDate.ToString("yyyy/MM/dd") + "';", sourceConnection);
                             long countStart = System.Convert.ToInt32(commandRowCount.ExecuteScalar());
                             log.LogInformation($"No of Rows costingdata:"+ countStart + "from "+startDate);
 
                             //Perform an Delete operation for old data from the source table.
-                            commandRowCount = new SqlCommand("Delete from dbo.AWSCloudConsumptionTest where CreatedOn >='" + startDate.ToString("yyyy/MM/dd") + "';", sourceConnection);
+                            commandRowCount = new SqlCommand("Delete from dbo.AWSCloudConsumption where CreatedOn >='" + startDate.ToString("yyyy/MM/dd") + "';", sourceConnection);
                             commandRowCount.ExecuteScalar();
 
                             //Perform Bulk Operation 
                             SqlBulkCopy bcp = new SqlBulkCopy(ConfigStore.SQLConnectionString);
-                            bcp.DestinationTableName = "AWSCloudConsumptionTest";
+                            bcp.DestinationTableName = "AWSCloudConsumption";
                             bcp.WriteToServer(sourceData);
                         }
                         
