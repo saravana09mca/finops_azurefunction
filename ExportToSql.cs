@@ -53,12 +53,12 @@ namespace Budget.TimerFunction
                         var dt = new DateTime(Convert.ToInt16(dtSplit[2]), Convert.ToInt16(dtSplit[0]), Convert.ToInt16(dtSplit[1]));
                         log.LogInformation("date -" + dt.ToShortDateString());
 
-                        //if(dt.Date == DateTime.Now.Date.AddDays(-1))
-                        //{
+                        if(dt.Date == DateTime.Now.Date.AddDays(-1))
+                        {
                             sourceData.Rows.Add(null, splits[24], splits[25], splits[29], splits[7], dt, 
                             splits[19], splits[20], splits[37], splits[39], splits[40], splits[32],
                             splits[30], splits [45], splits[46], splits[16], splits[13]);
-                        //}
+                        }
                     }
                 }
                 if(sourceData.Rows.Count > 0)
