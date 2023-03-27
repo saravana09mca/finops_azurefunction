@@ -430,7 +430,7 @@ namespace Budget.TimerFunction
             using (SqlConnection con = new SqlConnection(myConnectionString))
             {
                 con.Open();
-                SqlCommand objSqlCommand = new SqlCommand("truncate table GCPBudgetData where [date] ='" + date + "'", con);
+                SqlCommand objSqlCommand = new SqlCommand("truncate table GCPBudgetData", con);
                 try
                 {
                     result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
