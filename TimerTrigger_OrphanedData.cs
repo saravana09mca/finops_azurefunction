@@ -128,6 +128,47 @@ namespace Budget.TimerFunction
                                 sourceData.Rows.Add(row);  
                             }
                         } 
+
+                        //call api to get list of snapshots using subscription ids
+                        string snapshotApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/providers/Microsoft.Compute/snapshots?api-version=2021-12-01";
+                        var snapshotResponse = httpClient.GetAsync(snapshotApiUrl).Result;
+
+                        if (snapshotResponse.IsSuccessStatusCode)
+                        {
+                            var result = snapshotResponse.Content.ReadAsStringAsync().Result;
+                            dynamic snapshotJson = JsonConvert.DeserializeObject(result);
+                            foreach (var item in snapshotJson.value)
+                            {
+                                DateTime creationDate = item.properties.timeCreated;
+                                DateTime todayDate = DateTime.Now;
+                                int diff = (todayDate - creationDate).Days;
+                                Console.WriteLine("{0} \n", diff);
+
+                                string snapshotId = item.id;
+                                string resourceGroupName = snapshotId.Split('/')[4];
+                            
+                                row = sourceData.NewRow(); 
+
+                                row["SubscriptionID"] = subscriptionIds;
+                                row["SubscriptionName"] = subscription.DisplayName;
+                                row["ResourceGroupName"] = resourceGroupName;
+                                row["ResourceName"] = item.name;
+                                row["ResourceType"] = item.type;
+                                row["ResourceId"] = snapshotId;
+                                row["IsOrphaned"] = false;
+                                row["DateAdded"] = DateTime.Now;
+
+                                if(diff > 90)
+                                {
+                                    row["IsOrphaned"] = true;
+                                }
+                                else
+                                {
+                                    row["IsOrphaned"] = false;
+                                }
+                                sourceData.Rows.Add(row);  
+                            }
+                        }
                     }
                 }
                 if(sourceData.Rows.Count > 0)
