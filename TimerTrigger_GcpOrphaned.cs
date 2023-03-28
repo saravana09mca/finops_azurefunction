@@ -17,7 +17,7 @@ namespace Budget.TimerFunction
     public class TimerTrigger_GcpOrphaned
     {
         [FunctionName("TimerTrigger_GcpOrphaned")]
-        public void Run([TimerTrigger("%GCPOrphanedTimer%")] TimerInfo myTimer, ILogger log)
+        public void Run([TimerTrigger("%GCP_WeeklyTimer%")] TimerInfo myTimer, ILogger log)
         {
             try
             {
