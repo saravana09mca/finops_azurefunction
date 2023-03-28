@@ -98,13 +98,13 @@ namespace AzureFunction
                         sourceConnection.Open();
 
                         // Perform an Delete operation for old data from the source table.
-                        SqlCommand commandRowCount = new SqlCommand("Truncate table  " + "dbo.AWSAWSUtilization;", sourceConnection);
+                        SqlCommand commandRowCount = new SqlCommand("Truncate table  " + "dbo.AWSUtilization;", sourceConnection);
                         long countStart = System.Convert.ToInt32(commandRowCount.ExecuteScalar());
                         if (countStart == 0)
                         {
                             //Perform Bulk Insert Opertion to Source table
                             SqlBulkCopy bcp = new SqlBulkCopy(ConfigStore.SQLConnectionString);
-                            bcp.DestinationTableName = "AWSAWSUtilization";
+                            bcp.DestinationTableName = "AWSUtilization";
                             bcp.WriteToServer(sourceData);
                             IsBulkInsertResult = true;
                         }
