@@ -160,7 +160,7 @@ namespace Budget.TimerFunction
             using (SqlConnection con = new SqlConnection(myConnectionString))
             {
                 con.Open();
-                SqlCommand objSqlCommand = new SqlCommand("delete  GCPResourceTags", con);
+                SqlCommand objSqlCommand = new SqlCommand("truncate table GCPResourceTags", con);
                 try
                 {
                     result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());

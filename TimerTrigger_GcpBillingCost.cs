@@ -17,7 +17,7 @@ namespace Budget.TimerFunction
     public class TimerTrigger_GcpBillingCost
     {
         [FunctionName("TimerTrigger_GcpBillingCost")]
-        public void Run([TimerTrigger("%GCPBillingCostTimer%")] TimerInfo myTimer, ILogger log)
+        public void Run([TimerTrigger("%GCP_DailyTimer%")] TimerInfo myTimer, ILogger log)
         {
             try
             {

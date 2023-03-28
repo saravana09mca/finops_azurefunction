@@ -17,7 +17,7 @@ namespace Budget.TimerFunction
     public class TimerTrigger_GcpAdvisor
     {
         [FunctionName("TimerTrigger_GcpAdvisor")]
-        public void Run([TimerTrigger("%GCPAdvisorTimer%")] TimerInfo myTimer, ILogger log)
+        public void Run([TimerTrigger("%GCP_WeeklyTimer%")] TimerInfo myTimer, ILogger log)
         {
             try
             {
