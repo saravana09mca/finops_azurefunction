@@ -515,5 +515,29 @@ namespace Budget.TimerFunction
             }
             return result;
         }
+
+        public static bool SaveCarbonFootPrint(DataTable dt, string date, ILogger log)
+        {
+            bool result = false;
+            try
+            {
+                var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");              
+
+                if (dt.Rows.Count > 0)
+                {
+                    log.LogInformation($"Gcp Carbon FootPrint - SQL Bulk Copy Start- Count: {dt.Rows.Count}");
+                    SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
+                    bcp.DestinationTableName = "GCPCarbonFootPrint";
+                    bcp.WriteToServer(dt);
+                    log.LogInformation($"Gcp Carbon FootPrint - SQL Bulk Copy Completed");
+                }
+                result = true;
+            }
+            catch (Exception ex)
+            {
+                log.LogError(exception: ex, ex.Message);
+            }
+            return result;
+        }
     }
 }
