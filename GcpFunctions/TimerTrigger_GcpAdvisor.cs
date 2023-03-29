@@ -55,24 +55,6 @@ namespace Budget.TimerFunction
                     objAdvisorList.Add(objAdvisor);
                 }
 
-                foreach (var objInsight in objAdvisorInsight)
-                {
-                    GCPAdvisorModel.GCPAdvisor objAdvisor = new GCPAdvisorModel.GCPAdvisor();
-                    objAdvisor.ProjectNumber = objInsight.cloud_entity_id;
-                    objAdvisor.Name = objInsight.name;
-                    objAdvisor.Description = objInsight.description;
-                    objAdvisor.LastRefreshDate = objInsight.last_refresh_time;
-                    objAdvisor.Units = 0;
-                    objAdvisor.Nanos = 0;
-                    objAdvisor.CurrencyCode = String.Empty; ;
-                    objAdvisor.Type = objInsight.insight_type;
-                    objAdvisor.SubType = objInsight.insight_subtype;
-                    objAdvisor.Severity = Helper.GetSeverity(objInsight.severity);
-                    objAdvisor.Category = objInsight.category;
-                    objAdvisor.Location = objInsight.location;
-                    objAdvisorList.Add(objAdvisor);
-                }
-
                 log.LogInformation($"GCP Advisor  total no of rows {objAdvisorList.Count} will be insert to sql table");
                 GcptoSql.SaveGcpAdvisor(objAdvisorList, log);
             }

@@ -26,8 +26,8 @@ namespace Budget.TimerFunction
                 log.LogInformation($"ConfigStore Values of projectId:{ConfigStore.GCP.GCP_ProjectId}, datasetId:{ConfigStore.GCP.GCP_DataSetId}, tableId:{ConfigStore.GCP.GCP_TableId}");
 
                 List<GCPBillingCostModel.GCPBillingCost> objbilling = new List<GCPBillingCostModel.GCPBillingCost>();
-                
-                
+
+
                 GoogleCredential credentials = null;
 
                 using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP.GCP_BlobContrainerName, ConfigStore.GCP.GCP_BlobFileName))
@@ -37,22 +37,21 @@ namespace Budget.TimerFunction
 
                 var client = BigQueryClient.Create(ConfigStore.GCP.GCP_ProjectId, credentials);
 
-                if (!ConfigStore.GCP.GCP_IsManualDateRange)
-                {
-                    var date = DateTime.UtcNow.AddDays(ConfigStore.GCP.GCP_DataDaysDiff).ToString("yyyy-MM-dd");
-                    ConfigStore.GCP.GCP_FromDate = ConfigStore.GCP.GCP_ToDate = date;
-                }
+
+                var date = DateTime.UtcNow.AddDays(ConfigStore.GCP.GCP_DataDaysDiff).ToString("yyyy-MM-dd");
+                ConfigStore.GCP.GCP_FromDate = ConfigStore.GCP.GCP_ToDate = date;
+
 
                 log.LogInformation($"GCP Billing Records from {ConfigStore.GCP.GCP_FromDate}");
 
-                objbilling = GetGCPBillingList(client,log);
+                objbilling = GetGCPBillingList(client, log);
 
                 GcptoSql.SaveBillingCost(objbilling, log);
             }
             catch (Exception ex)
             {
                 log.LogError(ex, ex.Message);
-                throw ex; 
+                throw ex;
             }
         }
         public List<GCPBillingCostModel.GCPBillingCost> GetGCPBillingList(BigQueryClient client, ILogger log)
@@ -79,7 +78,7 @@ namespace Budget.TimerFunction
                 $"(cost/currency_conversion_rate) as CostUsd," +
                 $"currency as Currency," +
                 $"currency_conversion_rate as CurrencyConversionRate" +
-                $" FROM {ConfigStore.GCP.GCP_ProjectId}.{ConfigStore.GCP.GCP_DataSetId}.{ConfigStore.GCP.GCP_TableId} where Date(export_time)>='{ConfigStore.GCP.GCP_FromDate}'";      
+                $" FROM {ConfigStore.GCP.GCP_ProjectId}.{ConfigStore.GCP.GCP_DataSetId}.{ConfigStore.GCP.GCP_TableId} where Date(export_time)>='{ConfigStore.GCP.GCP_FromDate}'";
 
             // Run the query and get the results
             var results = client.ExecuteQuery(query, parameters: null);
