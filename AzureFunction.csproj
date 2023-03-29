@@ -9,20 +9,7 @@
     <None Remove="GcpFunctions\**" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Remove="AWSBudgetFunction.cs" />
-    <Compile Remove="AWSCloudConsumptionFunction.cs" />
-    <Compile Remove="AWSOrphanedResourcesFunction.cs" />
-    <Compile Remove="AWSTagDetailsFunction.cs" />
-    <Compile Remove="AWSUtilizationFunction.cs" />
-    <Compile Remove="ExportToSql.cs" />
-    <Compile Remove="GetAdvisorDataFunction.cs" />
-    <Compile Remove="GetUtilizationData.cs" />
     <Compile Remove="Model\GCPBillingModel.cs" />
-    <Compile Remove="TimerTrigger_BudgetData.cs" />
-    <Compile Remove="TimerTrigger_Function.cs" />
-    <Compile Remove="TimerTrigger_MonthlyHistoryData.cs" />
-    <Compile Remove="TimerTrigger_OrphanedData.cs" />
-    <Compile Remove="TimerTrigger_ResourceTag.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GcpFunctions\TimerTrigger_GcpCarbon.cs" />
