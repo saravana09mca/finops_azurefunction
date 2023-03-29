@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging;
 using System.Drawing;
 using System.Linq;
 
-namespace AzureFunction
+namespace Budget.TimerFunction.Aws
 {
     public class AWSOrphanedResourcesFunction
     {

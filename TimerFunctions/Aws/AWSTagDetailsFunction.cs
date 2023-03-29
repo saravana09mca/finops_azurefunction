@@ -17,7 +17,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
 
-namespace Budget.TimerFunction
+namespace Budget.TimerFunction.Aws
 {
     public class AWSTagDetailsFunction
     {

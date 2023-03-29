@@ -24,11 +24,12 @@
     "GCP_ToDate": "2023-03-05",
     "GCP_IsManualDateRange": "True",
     "GCP_DataDaysDiff": -10,
-   
+
     "GCP_DailyTimer": "0 */0 * * * *",
     "GCP_WeeklyTimer": "0 */0 * * * *",
     "GCP_CustomTimer": "0 */0 * * * *",
-   
+    "GCP_CarbonTimer": "0 */0 * * * *",
+
 
     "GCP_UtilizationDataDateDiff": "-1",
     "GCP_UtilizationProjectId": "eygds-sandbox-cloud-359111",

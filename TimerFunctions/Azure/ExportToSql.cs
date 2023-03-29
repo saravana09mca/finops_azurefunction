@@ -5,7 +5,8 @@ using System.IO;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using System.Data.SqlClient;
-namespace Budget.TimerFunction
+
+namespace Budget.TimerFunction.Azure
 {
     public class ExportToSql
     {

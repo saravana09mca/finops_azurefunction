@@ -13,7 +13,7 @@ using Microsoft.Identity.Client;
 using Microsoft.Rest;
 using Newtonsoft.Json;
 
-namespace Budget.TimerFunction
+namespace Budget.TimerFunction.Azure
 {
     public class TimerTrigger_BudgetData
     {

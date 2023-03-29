@@ -18,7 +18,7 @@ using Microsoft.Azure.Storage;
 using System.Text;
 using Microsoft.Azure.Management.Subscription.Models;
 
-namespace Budget.TimerFunction
+namespace Budget.TimerFunction.Azure
 {
     public class TimerTrigger_MonthlyHistoryData
     {

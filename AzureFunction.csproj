@@ -4,21 +4,7 @@
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="GcpFunctions\**" />
-    <EmbeddedResource Remove="GcpFunctions\**" />
-    <None Remove="GcpFunctions\**" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Remove="Model\GCPBillingModel.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="GcpFunctions\TimerTrigger_GcpAdvisor.cs" />
-    <Compile Include="GcpFunctions\TimerTrigger_GcpBillingCost.cs" />
-    <Compile Include="GcpFunctions\TimerTrigger_GcpBudget.cs" />
-    <Compile Include="GcpFunctions\TimerTrigger_GcpCarbon.cs" />
-    <Compile Include="GcpFunctions\TimerTrigger_GcpOrphaned.cs" />
-    <Compile Include="GcpFunctions\TimerTrigger_GcpTags.cs" />
-    <Compile Include="GcpFunctions\TimerTrigger_GCPUtilization.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.Core" Version="3.7.106.2" />

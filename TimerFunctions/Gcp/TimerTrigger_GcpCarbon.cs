@@ -13,9 +13,9 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Data;
 
-namespace Budget.TimerFunction.GcpFunctions
+namespace Budget.TimerFunction.Gcp
 {
-    public class GcpBudget
+    public class GcpCarbon
     {
         [FunctionName("TimerTrigger_GcpCarbon")]
         public void Run([TimerTrigger("%GCP_CarbonTimer%")] TimerInfo myTimer, ILogger log)
