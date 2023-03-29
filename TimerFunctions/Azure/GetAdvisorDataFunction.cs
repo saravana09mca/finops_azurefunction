@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using System.Data;
 using System.Data.SqlClient;
 
-namespace Budget.TimerFunction
+namespace Budget.TimerFunction.Azure
 {
     public class GetAdvisorDataFunction
     {

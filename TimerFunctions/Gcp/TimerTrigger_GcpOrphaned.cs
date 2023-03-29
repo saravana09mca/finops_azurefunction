@@ -12,7 +12,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 
 
-namespace Budget.TimerFunction
+namespace Budget.TimerFunction.Gcp
 {
     public class TimerTrigger_GcpOrphaned
     {
