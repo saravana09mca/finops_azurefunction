@@ -65,7 +65,8 @@ namespace Budget.TimerFunction.Gcp
                 $"carbon_footprint_kgCO2e.scope3 as Scope3," +
                 $"carbon_footprint_total_kgCO2e.location_based as TotalKgCO2eLocationBased," +
                 $"(carbon_footprint_kgCO2e.scope1 + carbon_footprint_kgCO2e.scope2.location_based + carbon_footprint_kgCO2e.scope3 + carbon_footprint_total_kgCO2e.location_based) as TotalCarbonFootPrint " +                
-                $"FROM `eygds-sandbox-cloud-359111.billing_info_1.carbon_footprint`";
+                $"FROM `eygds-sandbox-cloud-359111.billing_info_1.carbon_footprint` " +
+                $"where Date(usage_month)>='{date}'";
 
             log.LogInformation($"GCP Budget query '{query}'");
 

@@ -525,6 +525,7 @@ namespace Budget.TimerFunction
 
                 if (dt.Rows.Count > 0)
                 {
+                    DeleteGcpCarbonExistsData(date);
                     log.LogInformation($"Gcp Carbon FootPrint - SQL Bulk Copy Start- Count: {dt.Rows.Count}");
                     SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
                     bcp.DestinationTableName = "GCPCarbonFootPrint";
@@ -536,6 +537,26 @@ namespace Budget.TimerFunction
             catch (Exception ex)
             {
                 log.LogError(exception: ex, ex.Message);
+            }
+            return result;
+        }
+        public static bool DeleteGcpCarbonExistsData(string date)
+        {
+            var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
+            bool result = false;
+            using (SqlConnection con = new SqlConnection(myConnectionString))
+            {
+                con.Open();
+                SqlCommand objSqlCommand = new SqlCommand("delete GCPCarbonFootPrint where cast(UsageMonth as date)>='" + date + "'", con);
+                try
+                {
+                    result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
+                }
+                catch (Exception ex)
+                {
+                    con.Close();
+                    throw new Exception(ex.Message, ex);
+                }
             }
             return result;
         }
