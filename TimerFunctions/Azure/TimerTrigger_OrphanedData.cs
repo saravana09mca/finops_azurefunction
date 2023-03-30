@@ -169,6 +169,54 @@ namespace Budget.TimerFunction.Azure
                                 sourceData.Rows.Add(row);  
                             }
                         }
+
+                        //call api to get list of resource groups using subscription ids
+                        string resourceApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/resourcegroups?api-version=2021-04-01";
+                        var resourceGroupResponse = httpClient.GetAsync(resourceApiUrl).Result;
+
+                        if (resourceGroupResponse.IsSuccessStatusCode)
+                        {
+                            var result = resourceGroupResponse.Content.ReadAsStringAsync().Result;
+                            dynamic resourceGroupJson = JsonConvert.DeserializeObject(result);
+                            foreach (var rgname in resourceGroupJson.value)
+                            {
+                                Console.WriteLine("{0} \n", rgname.name);
+                                string rgName = Convert.ToString(rgname.name);
+                                log.LogInformation("ResourceGrouptName for Subscription id " +subscription.SubscriptionId + " is " + rgName);
+                            
+                                //call api to get the Public IP details
+                                var publicIPUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/resourceGroups/{rgName}/providers/Microsoft.Network/publicIPAddresses?api-version=2022-09-01";
+                                var publicIPResponse = httpClient.GetAsync(publicIPUrl).Result;
+                                if (publicIPResponse.IsSuccessStatusCode)
+                                {
+                                    var ipResult = publicIPResponse.Content.ReadAsStringAsync().Result;
+                                    dynamic publicIPJson = JsonConvert.DeserializeObject(ipResult);
+
+                                    foreach (var ip in publicIPJson.value)
+                                    {
+                                        row = sourceData.NewRow(); 
+
+                                        row["SubscriptionID"] = subscriptionIds;
+                                        row["SubscriptionName"] = subscription.DisplayName;
+                                        row["ResourceGroupName"] = rgName;
+                                        row["ResourceName"] = ip.name;
+                                        row["ResourceType"] = ip.type;
+                                        row["ResourceId"] = ip.id;
+                                        row["IsOrphaned"] = false;
+                                        row["DateAdded"] = DateTime.Now;
+                                        if(ip.properties.ContainsKey("ipConfiguration"))
+                                        {
+                                            row["IsOrphaned"] = false;
+                                        }
+                                        else
+                                        {
+                                            row["IsOrphaned"] = true;
+                                        }
+                                        sourceData.Rows.Add(row); 
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 if(sourceData.Rows.Count > 0)
