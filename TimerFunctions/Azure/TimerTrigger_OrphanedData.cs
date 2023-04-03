@@ -158,7 +158,7 @@ namespace Budget.TimerFunction.Azure
                                 row["IsOrphaned"] = false;
                                 row["DateAdded"] = DateTime.Now;
 
-                                if(diff > 90)
+                                if(diff > 15)
                                 {
                                     row["IsOrphaned"] = true;
                                 }
@@ -223,7 +223,7 @@ namespace Budget.TimerFunction.Azure
                 {
                     using (SqlConnection connection = new SqlConnection(myConnectionString))
                     {
-                        SqlCommand command = new SqlCommand("DELETE FROM OrphanedData;", connection);
+                        SqlCommand command = new SqlCommand("Truncate Table OrphanedData;", connection);
                         command.Connection.Open();
                         command.ExecuteNonQuery();
                         command.Connection.Close();
