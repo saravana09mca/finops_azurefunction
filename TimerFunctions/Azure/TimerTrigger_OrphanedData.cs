@@ -54,6 +54,7 @@ namespace Budget.TimerFunction.Azure
                 sourceData.Columns.Add("ResourceName");
                 sourceData.Columns.Add("ResourceType");
                 sourceData.Columns.Add("ResourceId");
+                sourceData.Columns.Add("Age");
                 sourceData.Columns.Add("IsOrphaned");
                 sourceData.Columns.Add("DateAdded");
 
@@ -87,6 +88,7 @@ namespace Budget.TimerFunction.Azure
                                 row["ResourceName"] = vm.name;
                                 row["ResourceType"] = vm.type;
                                 row["ResourceId"] = vmId;
+                                row["Age"] = "";
                                 row["IsOrphaned"] = false;
                                 row["DateAdded"] = DateTime.Now;
 
@@ -118,6 +120,7 @@ namespace Budget.TimerFunction.Azure
                                 row["ResourceName"] = disk.name;
                                 row["ResourceType"] = disk.type;
                                 row["ResourceId"] = diskId;
+                                row["Age"] = "";
                                 row["IsOrphaned"] = false;
                                 row["DateAdded"] = DateTime.Now;
 
@@ -155,6 +158,7 @@ namespace Budget.TimerFunction.Azure
                                 row["ResourceName"] = item.name;
                                 row["ResourceType"] = item.type;
                                 row["ResourceId"] = snapshotId;
+                                row["Age"] = diff.ToString();
                                 row["IsOrphaned"] = false;
                                 row["DateAdded"] = DateTime.Now;
 
@@ -202,6 +206,7 @@ namespace Budget.TimerFunction.Azure
                                         row["ResourceName"] = ip.name;
                                         row["ResourceType"] = ip.type;
                                         row["ResourceId"] = ip.id;
+                                        row["Age"] = "";
                                         row["IsOrphaned"] = false;
                                         row["DateAdded"] = DateTime.Now;
                                         if(ip.properties.ContainsKey("ipConfiguration"))
