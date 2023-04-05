@@ -54,7 +54,7 @@ namespace Budget.TimerFunction.Azure
                 sourceData.Columns.Add("ResourceName");
                 sourceData.Columns.Add("ResourceType");
                 sourceData.Columns.Add("ResourceId");
-                sourceData.Columns.Add("Age");
+                sourceData.Columns.Add("CreationDate");
                 sourceData.Columns.Add("IsOrphaned");
                 sourceData.Columns.Add("DateAdded");
 
@@ -65,8 +65,6 @@ namespace Budget.TimerFunction.Azure
                     string subscriptionIds = subscription.SubscriptionId;
                     if(subscription.State == SubscriptionState.Enabled)
                     {
-                        
-
                         //call api to get the virtual machine details
                         var vmApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/providers/Microsoft.Compute/virtualMachines?api-version=2022-11-01&statusOnly=true";
                         var vmResponse = httpClient.GetAsync(vmApiUrl).Result;
@@ -88,7 +86,7 @@ namespace Budget.TimerFunction.Azure
                                 row["ResourceName"] = vm.name;
                                 row["ResourceType"] = vm.type;
                                 row["ResourceId"] = vmId;
-                                row["Age"] = "";
+                                row["CreationDate"] = vm.properties.instanceView.statuses[0].time;
                                 row["IsOrphaned"] = false;
                                 row["DateAdded"] = DateTime.Now;
 
@@ -120,7 +118,7 @@ namespace Budget.TimerFunction.Azure
                                 row["ResourceName"] = disk.name;
                                 row["ResourceType"] = disk.type;
                                 row["ResourceId"] = diskId;
-                                row["Age"] = "";
+                                row["CreationDate"] = disk.properties.timeCreated;
                                 row["IsOrphaned"] = false;
                                 row["DateAdded"] = DateTime.Now;
 
@@ -158,7 +156,7 @@ namespace Budget.TimerFunction.Azure
                                 row["ResourceName"] = item.name;
                                 row["ResourceType"] = item.type;
                                 row["ResourceId"] = snapshotId;
-                                row["Age"] = diff.ToString();
+                                row["CreationDate"] = creationDate.ToString();
                                 row["IsOrphaned"] = false;
                                 row["DateAdded"] = DateTime.Now;
 
@@ -206,7 +204,7 @@ namespace Budget.TimerFunction.Azure
                                         row["ResourceName"] = ip.name;
                                         row["ResourceType"] = ip.type;
                                         row["ResourceId"] = ip.id;
-                                        row["Age"] = "";
+                                        row["CreationDate"] = "";
                                         row["IsOrphaned"] = false;
                                         row["DateAdded"] = DateTime.Now;
                                         if(ip.properties.ContainsKey("ipConfiguration"))
