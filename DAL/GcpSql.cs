@@ -162,10 +162,10 @@ namespace Budget.TimerFunction
             using (SqlConnection con = new SqlConnection(myConnectionString))
             {
                 con.Open();
-                SqlCommand objSqlCommand = new SqlCommand("truncate table GCPResourceTags", con);
+                SqlCommand objSqlCommand = new SqlCommand("delete GCPResourceTags", con);
                 try
                 {
-                    int rows = (int)objSqlCommand.ExecuteScalar();
+                    int rows = objSqlCommand.ExecuteNonQuery();
                     _logger.LogInformation($"Gcp Tags rows {rows} deleted");
                 }
                 catch (Exception ex)
@@ -287,7 +287,7 @@ namespace Budget.TimerFunction
                 SqlCommand objSqlCommand = new SqlCommand("delete GCPAdvisorRecommendation", con);
                 try
                 {
-                    int rows =  (int)objSqlCommand.ExecuteScalar();
+                    int rows =  objSqlCommand.ExecuteNonQuery();
                     _logger.LogInformation($"Gcp Advisor rows {rows} deleted");
                 }
                 catch (Exception)
@@ -360,7 +360,7 @@ namespace Budget.TimerFunction
                 SqlCommand objSqlCommand = new SqlCommand("delete GCPUtilization where [date] ='" + date+"'", con);
                 try
                 {
-                    int rows = (int)objSqlCommand.ExecuteScalar();
+                    int rows = objSqlCommand.ExecuteNonQuery();
                     _logger.LogInformation($"Gcp Utilization rows {rows} deleted");
                 }
                 catch (Exception)
@@ -369,7 +369,6 @@ namespace Budget.TimerFunction
                     throw;
                 }
             }
-            
         }
         public void SaveGcpBudget(List<GcpBudgetModel.GcpBudget> objBudgetList, string date)
         {
@@ -427,10 +426,10 @@ namespace Budget.TimerFunction
             using (SqlConnection con = new SqlConnection(myConnectionString))
             {
                 con.Open();
-                SqlCommand objSqlCommand = new SqlCommand("truncate table GCPBudgetData", con);
+                SqlCommand objSqlCommand = new SqlCommand("delete GCPBudgetData where cast(Date as date)>='"+date+"'", con);
                 try
                 {
-                    int rows = (int)objSqlCommand.ExecuteScalar();
+                    int rows = objSqlCommand.ExecuteNonQuery();
                     _logger.LogInformation($"Gcp Budget rows {rows} deleted");
                 }
                 catch (Exception)
@@ -500,10 +499,10 @@ namespace Budget.TimerFunction
             using (SqlConnection con = new SqlConnection(myConnectionString))
             {
                 con.Open();
-                SqlCommand objSqlCommand = new SqlCommand("truncate table GCPOrhpanedData", con);
+                SqlCommand objSqlCommand = new SqlCommand("delete GCPOrhpanedData", con);
                 try
                 {
-                    int rows = (int)objSqlCommand.ExecuteScalar();
+                    int rows = objSqlCommand.ExecuteNonQuery();
                     _logger.LogInformation($"Gcp Orphaned rows {rows} deleted");
                 }
                 catch (Exception)
@@ -551,7 +550,7 @@ namespace Budget.TimerFunction
                 SqlCommand objSqlCommand = new SqlCommand("delete GCPCarbonFootPrint where cast(UsageMonth as date)>='" + date + "'", con);
                 try
                 {
-                    int rows = (int)objSqlCommand.ExecuteScalar();
+                    int rows = objSqlCommand.ExecuteNonQuery();
                     _logger.LogInformation($"Gcp Carbon FootPrint rows {rows} deleted");
                 }
                 catch (Exception)
