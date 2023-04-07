@@ -74,6 +74,7 @@ namespace Budget.TimerFunction
             builder.Services.AddSingleton<IGcpCarbon, GcpCarbonService>();
             builder.Services.AddSingleton<IGcpOrphaned, GcpOrphanedService>();
             builder.Services.AddSingleton<IGcpTags, GcpTagsService>();
+            builder.Services.AddSingleton<IGcpUtilization, GcpUtilizationService>();
             builder.Services.AddSingleton<IGcpCredentials, GcpCredentials>();
             builder.Services.AddSingleton<IGcpSql, GcptoSql>();
         }
