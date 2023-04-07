@@ -11,11 +11,21 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Linq;
+using AzureFunction.Services.Gcp;
 
 namespace Budget.TimerFunction.Gcp
 {
-    public class GcpBudget
+    public class TimerTrigger_GcpBudget
     {
+        private readonly IGcpBudget _gcpBudget;
+        private readonly IGcpCredentials _gcpCredentials;
+        public TimerTrigger_GcpBudget(IGcpBudget gcpBudget,
+            IGcpCredentials gcpCredentials)
+        {
+            _gcpBudget = gcpBudget;
+            _gcpCredentials = gcpCredentials;
+        }
+
         [FunctionName("TimerTrigger_GcpBudget")]
         public void Run([TimerTrigger("%GCP_WeeklyTimer%")] TimerInfo myTimer, ILogger log)
         {
@@ -23,56 +33,17 @@ namespace Budget.TimerFunction.Gcp
             {
                 log.LogInformation($"GCP Budget function executed at: {DateTime.Now}");
 
-                List<GcpBudgetModel.GcpBudget> objBudgetList = new List<GcpBudgetModel.GcpBudget>();
-                
-                
-                GoogleCredential credentials = null;
+                var client = _gcpCredentials.GcpAuthentication();
 
-                using (var stream = Helper.GetBlobMemoryStream(ConfigStore.AzureStorageAccountConnectionString, ConfigStore.GCP.GCP_BlobContrainerName, ConfigStore.GCP.GCP_BlobFileName))
-                {
-                    credentials = GoogleCredential.FromStream(stream);
-                }
+                _gcpBudget.PutGcpBudget(client);
 
-                var client = BigQueryClient.Create(ConfigStore.GCP.GCP_ProjectId, credentials);
-                DateTime datetime = DateTime.UtcNow;
-                var date = new DateTime(datetime.Year, datetime.Month, 1);
-                //var endDate = date.AddMonths(1).AddDays(-1);
-
-                log.LogInformation($"GCP Utilization Data Date {date.ToString("yyyy-MM-dd")}");
-
-                objBudgetList = GetGCPBudgetList(client, date.ToString("yyyy-MM-dd"), log);
-
-                GcptoSql.SaveGcpBudget(objBudgetList, date.ToString("yyyy-MM-dd"), log);
+                log.LogInformation($"GCP Budget function Process Completed..");
             }
             catch (Exception ex)
             {
-                log.LogError(ex, ex.Message);
-                throw ex; 
+                log.LogError(ex, $"Gcp Budget error occurred in the Timer Trigger Function - {ex.Message}");
+                throw new Exception($"Gcp Budget Error - {ex.Message}", ex);
             }
-        }
-        public List<GcpBudgetModel.GcpBudget> GetGCPBudgetList(BigQueryClient client,string date, ILogger log)
-        {   
-            List<GcpBudgetModel.GcpBudget> objBudgetList = new List<GcpBudgetModel.GcpBudget>();
-            // Build the query
-            var query = $"SELECT distinct data FROM `{ConfigStore.GCP.GCP_BudgetProjectId}.{ConfigStore.GCP.GCP_BudgetDatasetId}.{ConfigStore.GCP.GCP_BudgetTableId}` where DATE(REGEXP_REPLACE(JSON_EXTRACT(data, '$.costIntervalStart'),'\"', ''))>='{date}'";
-
-            log.LogInformation($"GCP Budget query '{query}'");
-
-            // Run the query and get the results
-            var results = client.ExecuteQuery(query, parameters: null);
-
-            log.LogInformation($"No of GCP Budget rows {results.TotalRows} returned");
-
-           
-            foreach (var row in results)
-            {
-                if (!string.IsNullOrEmpty(row["data"].ToString()))
-                {
-                    var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GcpBudgetModel.GcpBudget>(row["data"].ToString());
-                    objBudgetList.Add(result);
-                }
-            }
-           return objBudgetList;
         }
     }
 }

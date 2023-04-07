@@ -6,6 +6,8 @@ using Amazon.S3;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using AzureFunction.Common;
+using AzureFunction.Services.Gcp;
 
 [assembly: FunctionsStartup(typeof(Budget.TimerFunction.Startup))]
 
@@ -66,6 +68,14 @@ namespace Budget.TimerFunction
         public override void Configure(IFunctionsHostBuilder builder)
         {
             builder.Services.AddSingleton<IAmazonS3>(AmazonS3ClientCreate);
+            builder.Services.AddSingleton<IGcpAdvisorRecommendation, GcpAdvisorRecommendationService>();
+            builder.Services.AddSingleton<IGcpBillingCost, GcpBillingCostService>();
+            builder.Services.AddSingleton<IGcpBudget, GcpBudgetService>();
+            builder.Services.AddSingleton<IGcpCarbon, GcpCarbonService>();
+            builder.Services.AddSingleton<IGcpOrphaned, GcpOrphanedService>();
+            builder.Services.AddSingleton<IGcpTags, GcpTagsService>();
+            builder.Services.AddSingleton<IGcpCredentials, GcpCredentials>();
+            builder.Services.AddSingleton<IGcpSql, GcptoSql>();
         }
 
         private static IAmazonS3 AmazonS3ClientCreate(IServiceProvider serviceProvider)
