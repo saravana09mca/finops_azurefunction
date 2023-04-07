@@ -13,16 +13,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Budget.TimerFunction
 {
-    public class GcptoSql:IGcpSql
+    public class GcptoSql
     {
-        private  readonly ILogger<GcptoSql> _logger;
-
-        public  GcptoSql(ILogger<GcptoSql> logger)
+        public static bool SaveBillingCost(List<GCPBillingCostModel.GCPBillingCost> listGCPDdata, ILogger log)
         {
-            _logger = logger;
-        }
-        public void SaveBillingCost(List<GCPBillingCostModel.GCPBillingCost> listGCPDdata)
-        {
+            bool result = false;
             try
             {
                 var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
@@ -98,31 +93,34 @@ namespace Budget.TimerFunction
                     {
                         try
                         {
-                            _logger.LogInformation($"GCP Billing Cost - Delete process start");
-                            DeleteGCPBillingcostFromDate();
-                            _logger.LogInformation($"Gcp Billing Cost - SQL Bulk Copy - No of Rows Data: {dt.Rows.Count}");
+                            
+                            DeleteGCPBillingcostFromDate(log);
+                            log.LogInformation($"SQL Bulk Copy - No of Rows Data: {dt.Rows.Count}");
                             SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
                             bcp.DestinationTableName = "GCPBillingData";
                             bcp.BatchSize = 10000;
                             bcp.WriteToServer(dt);
-                            _logger.LogInformation("Gcp Billing Cost  -SQL Bulk Copy Completed");
+                            log.LogInformation("SQL Bulk Copy Completed");
                         }
                         catch (TransactionException ex)
                         {
                             transactionScope.Dispose();
-                            throw new Exception($"Gcp Billing Cost - Transaction Exception Occured - {ex.Message}");
+                            throw new Exception($"Transaction Exception Occured - {ex.Message}");
                         }
                         transactionScope.Complete();
                     }
                 }
+                result = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                log.LogError(exception: ex, ex.Message);
             }
+            return result;
         }
-        public void DeleteGCPBillingcostFromDate()
+        public static void DeleteGCPBillingcostFromDate(ILogger log)
         {
+            log.LogInformation($"SQL Delete Process Start");
             var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
             int batchSize = 10000;
             using (SqlConnection connection = new SqlConnection(myConnectionString))
@@ -146,7 +144,7 @@ namespace Budget.TimerFunction
                         }
                         rowsAffected += batchRowsAffected;
                     }
-                    _logger.LogInformation($"GCP BillingCost Deleted {rowsAffected} rows");
+                    log.LogInformation($"Deleted {rowsAffected} rows");
                 }
                 connection.Close();
             }            
@@ -155,18 +153,17 @@ namespace Budget.TimerFunction
        
      
 
-        public void DeleteGcpTagsExists()
+        public static bool DeleteGcpTagsExists()
         {
             var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
-        
+            bool result = false;
             using (SqlConnection con = new SqlConnection(myConnectionString))
             {
                 con.Open();
                 SqlCommand objSqlCommand = new SqlCommand("truncate table GCPResourceTags", con);
                 try
                 {
-                    int rows = (int)objSqlCommand.ExecuteScalar();
-                    _logger.LogInformation($"Gcp Tags rows {rows} deleted");
+                    result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
                 }
                 catch (Exception ex)
                 {
@@ -174,9 +171,11 @@ namespace Budget.TimerFunction
                     throw new Exception(ex.Message, ex);
                 }
             }
+            return result;
         }
-        public void SaveGcpTags(List<GcpTagsModel.GcpTags> listGCPTagsdata)
+        public static bool SaveGcpTags(List<GcpTagsModel.GcpTags> listGCPTagsdata, ILogger log)
         {
+            bool result = false;
             try
             {
                 var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
@@ -204,22 +203,26 @@ namespace Budget.TimerFunction
 
                 if (dt.Rows.Count > 0)
                 {
-                    _logger.LogInformation($"GCP Tags - Deleting process start. ");
+                    log.LogInformation($"GCP Tags - Start deleting existing records ");
                     DeleteGcpTagsExists();
-                    _logger.LogInformation($"GCP Tags - SQL Bulk Copy Start - Count: {dt.Rows.Count}");
+                    log.LogInformation($"GCP Tags Existing records deleted");
+                    log.LogInformation($"GCP Tags SQL Bulk Copy Start - Count: {dt.Rows.Count}");
                     SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
                     bcp.DestinationTableName = "GCPResourceTags";
                     bcp.WriteToServer(dt);
-                    _logger.LogInformation("GCP Tags - SQL Bulk Copy Completed");
+                    log.LogInformation("SQL Bulk Copy Completed");
                 }
+                result = true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(exception: ex, ex.Message);
+                log.LogError(exception: ex, ex.Message);
             }
+            return result;
         }
-        public void SaveGcpAdvisor(List<GCPAdvisorModel.GCPAdvisor> objAdvisor)
+        public static bool SaveGcpAdvisor(List<GCPAdvisorModel.GCPAdvisor> objAdvisor,ILogger log)
         {
+            bool result = false;
             try
             {
                 var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
@@ -263,43 +266,45 @@ namespace Budget.TimerFunction
 
                 if (dt.Rows.Count > 0)
                 {
-                    _logger.LogInformation($"Gcp Advisor - Delete process start");
                     DeleteGcpAdvisorExistsData();
-                    _logger.LogInformation($"Gcp Advisor - SQL Bulk Copy Start- Count: {dt.Rows.Count}");
+                    log.LogInformation($"Gcp Advisor Delete Exists Data Processed");
+                    log.LogInformation($"Gcp Advisor  SQL Bulk Copy Start- Count: {dt.Rows.Count}");
                     SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
                     bcp.DestinationTableName = "GCPAdvisorRecommendation";
                     bcp.WriteToServer(dt);
-                    _logger.LogInformation($"Gcp Advisor  SQL Bulk Copy Completed");
+                    log.LogInformation($"Gcp Advisor  SQL Bulk Copy Completed");
                 }
+                result = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                log.LogError(exception: ex, ex.Message);
             }
-          
+            return result;
         }
-        public void DeleteGcpAdvisorExistsData()
+        public static bool DeleteGcpAdvisorExistsData()
         {
             var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
+            bool result = false;
             using (SqlConnection con = new SqlConnection(myConnectionString))
             {
                 con.Open();
                 SqlCommand objSqlCommand = new SqlCommand("delete GCPAdvisorRecommendation", con);
                 try
                 {
-                    int rows =  (int)objSqlCommand.ExecuteScalar();
-                    _logger.LogInformation($"Gcp Advisor rows {rows} deleted");
+                    result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     con.Close();
-                    throw;
+                    throw new Exception(ex.Message,ex);
                 }
             }
+            return result;
         }
-        public void SaveGcpUtilization(List<GCPUtilizationModel.GCPUtilization> objUtilization, string date)
+        public static bool SaveGcpUtilization(List<GCPUtilizationModel.GCPUtilization> objUtilization, string date, ILogger log)
         {
-         
+            bool result = false;
             try
             {
                 var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
@@ -333,47 +338,46 @@ namespace Budget.TimerFunction
 
                 if (dt.Rows.Count > 0)
                 {
-                    _logger.LogInformation($"Gcp Utilization - Delete Process start");
-                    DeleteGcpUtilizationExistsData(date);                    
-                    _logger.LogInformation($"Gcp Utilization - SQL Bulk Copy Start- Count: {dt.Rows.Count}");
+                    DeleteGcpUtilizationExistsData(date,log);
+                    log.LogInformation($"Gcp Utilization Delete Exists Data Processed");
+                    log.LogInformation($"Gcp Utilization  SQL Bulk Copy Start- Count: {dt.Rows.Count}");
                     SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
                     bcp.DestinationTableName = "GCPUtilization";
                     bcp.WriteToServer(dt);
-                    _logger.LogInformation($"Gcp Utilization - SQL Bulk Copy Completed");
+                    log.LogInformation($"Gcp Utilization  SQL Bulk Copy Completed");
                 }
-                
+                result = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                log.LogError(exception: ex, ex.Message);
             }
-            
+            return result;
         }
      
-        public void DeleteGcpUtilizationExistsData(string date)
+        public static bool DeleteGcpUtilizationExistsData(string date, ILogger log)
         {
             var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
-         
+            bool result = false;
             using (SqlConnection con = new SqlConnection(myConnectionString))
             {
                 con.Open();
                 SqlCommand objSqlCommand = new SqlCommand("delete GCPUtilization where [date] ='" + date+"'", con);
                 try
                 {
-                    int rows = (int)objSqlCommand.ExecuteScalar();
-                    _logger.LogInformation($"Gcp Utilization rows {rows} deleted");
+                    result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     con.Close();
-                    throw;
+                    throw new Exception(ex.Message, ex);
                 }
             }
-            
+            return result;
         }
-        public void SaveGcpBudget(List<GcpBudgetModel.GcpBudget> objBudgetList, string date)
+        public static bool SaveGcpBudget(List<GcpBudgetModel.GcpBudget> objBudgetList, string date, ILogger log)
         {
-         
+            bool result = false;
             try
             {
                 var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
@@ -403,47 +407,45 @@ namespace Budget.TimerFunction
 
                 if (dt.Rows.Count > 0)
                 {
-                    _logger.LogInformation($"Gcp Budget - Deleting Process start.");
-                    DeleteGcpBudgetData(date);
-                    
-                    _logger.LogInformation($"Gcp Budget - SQL Bulk Copy Start- Count: {dt.Rows.Count}");
+                    DeleteGcpBudgetData(date,log);
+                    log.LogInformation($"Gcp Budget Delete Exists Data Processed");
+                    log.LogInformation($"Gcp Budget  SQL Bulk Copy Start- Count: {dt.Rows.Count}");
                     SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
                     bcp.DestinationTableName = "GCPBudgetData";
                     bcp.WriteToServer(dt);
-                    _logger.LogInformation($"Gcp Budget - SQL Bulk Copy Completed");
+                    log.LogInformation($"Gcp Budget SQL Bulk Copy Completed");
                 }
-                
+                result = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                log.LogError(exception: ex, ex.Message);
             }
-            
+            return result;
         }
-        public void DeleteGcpBudgetData(string date)
+        public static bool DeleteGcpBudgetData(string date, ILogger log)
         {
             var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
-         
+            bool result = false;
             using (SqlConnection con = new SqlConnection(myConnectionString))
             {
                 con.Open();
                 SqlCommand objSqlCommand = new SqlCommand("truncate table GCPBudgetData", con);
                 try
                 {
-                    int rows = (int)objSqlCommand.ExecuteScalar();
-                    _logger.LogInformation($"Gcp Budget rows {rows} deleted");
+                    result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     con.Close();
-                    throw;
+                    throw new Exception(ex.Message, ex);
                 }
             }
-            
+            return result;
         }
-        public void SaveGcpOrphaned(List<GCPAdvisorModel.GCPAdvisor> objAdvisor)
+        public static bool SaveGcpOrphaned(List<GCPAdvisorModel.GCPAdvisor> objAdvisor, ILogger log)
         {
-         
+            bool result = false;
             try
             {
                 var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
@@ -477,89 +479,86 @@ namespace Budget.TimerFunction
 
                 if (dt.Rows.Count > 0)
                 {
-                    _logger.LogInformation($"Gcp Orphaned - Delete Process start.");
                     DeleteGcpOrphanedExistsData();
-                    _logger.LogInformation($"Gcp Orphaned - SQL Bulk Copy Start- Count: {dt.Rows.Count}");
+                    log.LogInformation($"Gcp Orphaned Delete Exists Data Processed");
+                    log.LogInformation($"Gcp Orphaned SQL Bulk Copy Start- Count: {dt.Rows.Count}");
                     SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
                     bcp.DestinationTableName = "GCPOrhpanedData";
                     bcp.WriteToServer(dt);
-                    _logger.LogInformation($"Gcp Orphaned - SQL Bulk Copy Completed");
+                    log.LogInformation($"Gcp Orphaned SQL Bulk Copy Completed");
                 }
-                
+                result = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                log.LogError(exception: ex, ex.Message);
             }
-            
+            return result;
         }
-        public void DeleteGcpOrphanedExistsData()
+        public static bool DeleteGcpOrphanedExistsData()
         {
             var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
-         
+            bool result = false;
             using (SqlConnection con = new SqlConnection(myConnectionString))
             {
                 con.Open();
                 SqlCommand objSqlCommand = new SqlCommand("truncate table GCPOrhpanedData", con);
                 try
                 {
-                    int rows = (int)objSqlCommand.ExecuteScalar();
-                    _logger.LogInformation($"Gcp Orphaned rows {rows} deleted");
+                    result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     con.Close();
-                    throw;
+                    throw new Exception(ex.Message, ex);
                 }
             }
-            
+            return result;
         }
 
-        public void SaveCarbonFootPrint(DataTable dt, string date)
+        public static bool SaveCarbonFootPrint(DataTable dt, string date, ILogger log)
         {
-         
+            bool result = false;
             try
             {
                 var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");              
 
                 if (dt.Rows.Count > 0)
                 {
-
-                    _logger.LogInformation($"Gcp Carbon FootPrint - Delete Process start.");
                     DeleteGcpCarbonExistsData(date);
-                    _logger.LogInformation($"Gcp Carbon FootPrint - SQL Bulk Copy Start- Count: {dt.Rows.Count}");
+                    log.LogInformation($"Gcp Carbon FootPrint - SQL Bulk Copy Start- Count: {dt.Rows.Count}");
                     SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
                     bcp.DestinationTableName = "GCPCarbonFootPrint";
                     bcp.WriteToServer(dt);
-                    _logger.LogInformation($"Gcp Carbon FootPrint - SQL Bulk Copy Completed");
+                    log.LogInformation($"Gcp Carbon FootPrint - SQL Bulk Copy Completed");
                 }
-                
+                result = true;
             }
             catch (Exception ex)
             {
-                throw;
+                log.LogError(exception: ex, ex.Message);
             }
-            
+            return result;
         }
-        public void DeleteGcpCarbonExistsData(string date)
+        public static bool DeleteGcpCarbonExistsData(string date)
         {
             var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
-         
+            bool result = false;
             using (SqlConnection con = new SqlConnection(myConnectionString))
             {
                 con.Open();
                 SqlCommand objSqlCommand = new SqlCommand("delete GCPCarbonFootPrint where cast(UsageMonth as date)>='" + date + "'", con);
                 try
                 {
-                    int rows = (int)objSqlCommand.ExecuteScalar();
-                    _logger.LogInformation($"Gcp Carbon FootPrint rows {rows} deleted");
+                    result = Convert.ToBoolean(objSqlCommand.ExecuteScalar());
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     con.Close();
-                    throw;
+                    throw new Exception(ex.Message, ex);
                 }
-            }            
+            }
+            return result;
         }
     }
 }
