@@ -60,8 +60,7 @@ namespace AzureFunction.Services.Gcp
                 $"carbon_footprint_kgCO2e.scope1 as Scope1," +
                 $"carbon_footprint_kgCO2e.scope2.location_based as Scope2," +
                 $"carbon_footprint_kgCO2e.scope3 as Scope3," +
-                $"carbon_footprint_total_kgCO2e.location_based as TotalKgCO2eLocationBased," +
-                $"(carbon_footprint_kgCO2e.scope1 + carbon_footprint_kgCO2e.scope2.location_based + carbon_footprint_kgCO2e.scope3 + carbon_footprint_total_kgCO2e.location_based) as TotalCarbonFootPrint " +
+                $"carbon_footprint_total_kgCO2e.location_based as TotalKgCO2eLocationBased " +                
                 $"FROM `eygds-sandbox-cloud-359111.billing_info_1.carbon_footprint` " +
                 $"where Date(usage_month)>='{date}'";
 
@@ -84,7 +83,6 @@ namespace AzureFunction.Services.Gcp
             dt.Columns.Add("Scope2");
             dt.Columns.Add("Scope3");
             dt.Columns.Add("TotalKgCO2eLocationBased");
-            dt.Columns.Add("TotalCarbonFootPrint");
             dt.Columns.Add("CreatedOn");
 
             foreach (var data in results)
@@ -102,7 +100,6 @@ namespace AzureFunction.Services.Gcp
                 row["Scope2"] = Helper.ValidateDecimal(Convert.ToString(data["Scope2"]));
                 row["Scope3"] = Helper.ValidateDecimal(Convert.ToString(data["Scope3"]));
                 row["TotalKgCO2eLocationBased"] = Helper.ValidateDecimal(Convert.ToString(data["TotalKgCO2eLocationBased"]));
-                row["TotalCarbonFootPrint"] = Helper.ValidateDecimal(Convert.ToString(data["TotalCarbonFootPrint"]));
                 row["CreatedOn"] = DateTime.UtcNow;
                 dt.Rows.Add(row);
             }
