@@ -17,7 +17,7 @@ namespace Budget.TimerFunction.Azure
     public class CostAlertData
     {
         [FunctionName("CostAlertData")]
-        public static async Task Run([TimerTrigger("%WeeklyTrigger%")]TimerInfo myTimer, ILogger log)
+        public static async Task Run([TimerTrigger("%Timer%")]TimerInfo myTimer, ILogger log)
         {
             if (myTimer.IsPastDue)
             {
@@ -63,6 +63,7 @@ namespace Budget.TimerFunction.Azure
                 sourceData.Columns.Add("CostEntityId");
                 sourceData.Columns.Add("CurrentSpend");
                 sourceData.Columns.Add("Status");
+                sourceData.Columns.Add("AlertMessage");
                 sourceData.Columns.Add("AlertCreationTime");
                 sourceData.Columns.Add("DateAdded");
 
@@ -84,6 +85,10 @@ namespace Budget.TimerFunction.Azure
 
                             foreach (var alert in alertResponse.value)
                             {
+                                string BudgetName = alert.properties.costEntityId;
+                                decimal BudgetAmount = alert.properties.details.amount;
+                                decimal thresholdPercent = alert.properties.details.threshold*100;
+
                                 row = sourceData.NewRow(); 
 
                                 row["SubscriptionID"] = subscriptionIds;
@@ -101,6 +106,28 @@ namespace Budget.TimerFunction.Azure
                                 row["CostEntityId"] = alert.properties.costEntityId;
                                 row["CurrentSpend"] = alert.properties.details.currentSpend;
                                 row["Status"] = alert.properties.status;
+                                if(alert.properties.definition.type == "BudgetForecast")
+                                {
+                                    if(alert.properties.details.currentSpend > alert.properties.details.amount)
+                                    {
+                                        row["AlertMessage"] = $"{BudgetName} - Forecasted spend crossed the budget amount of {BudgetAmount}";
+                                    }
+                                    else
+                                    {
+                                        row["AlertMessage"] = $"Forecasted spend is {thresholdPercent}% of the budget amount {BudgetAmount}";
+                                    }
+                                }
+                                if(alert.properties.definition.type == "Budget")
+                                {
+                                    if(alert.properties.details.currentSpend > alert.properties.details.amount)
+                                    {
+                                        row["AlertMessage"] = $"{BudgetName} - Actual spend crossed the budget amount of {BudgetAmount}";
+                                    }
+                                    else
+                                    {
+                                        row["AlertMessage"] = $"Actual spend is {thresholdPercent}% of the budget amount {BudgetAmount}";
+                                    }
+                                }
                                 row["AlertCreationTime"] = alert.properties.creationTime;
                                 row["DateAdded"] = DateTime.Now;
 

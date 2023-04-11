@@ -17,7 +17,7 @@ namespace Budget.TimerFunction.Azure
     public class TimerTrigger_OrphanedData
     {
         [FunctionName("TimerTrigger_OrphanedData")]
-        public static async Task Run([TimerTrigger("%WeeklyTrigger%")]TimerInfo myTimer, ILogger log)
+        public static async Task Run([TimerTrigger("%Timer%")]TimerInfo myTimer, ILogger log)
         {
             if (myTimer.IsPastDue)
             {
@@ -56,6 +56,7 @@ namespace Budget.TimerFunction.Azure
                 sourceData.Columns.Add("ResourceId");
                 sourceData.Columns.Add("CreationDate");
                 sourceData.Columns.Add("IsOrphaned");
+                sourceData.Columns.Add("AlertMessage");
                 sourceData.Columns.Add("DateAdded");
 
                 var subscriptionClient = new SubscriptionClient(credentials);
@@ -88,11 +89,13 @@ namespace Budget.TimerFunction.Azure
                                 row["ResourceId"] = vmId;
                                 row["CreationDate"] = vm.properties.instanceView.statuses[0].time;
                                 row["IsOrphaned"] = false;
+                                row["AlertMessage"] = "";
                                 row["DateAdded"] = DateTime.Now;
 
                                 if(vm.properties.instanceView.statuses[1].displayStatus == "VM deallocated")
                                 {
                                     row["IsOrphaned"] = true;
+                                    row["AlertMessage"] = $"Virtual Machine which is deallocated with Resource ID - {vmId} is marked as an orphaned resource.";
                                 }
                                 sourceData.Rows.Add(row); 
                             }
@@ -120,11 +123,13 @@ namespace Budget.TimerFunction.Azure
                                 row["ResourceId"] = diskId;
                                 row["CreationDate"] = disk.properties.timeCreated;
                                 row["IsOrphaned"] = false;
+                                row["AlertMessage"] = "";
                                 row["DateAdded"] = DateTime.Now;
 
                                 if(diskStatus != "Attached")
                                 {
                                     row["IsOrphaned"] = true;
+                                    row["AlertMessage"] = $"Disk which is unattached with Resource ID - {diskId} is marked as an orphaned resource.";
                                 }  
                                 sourceData.Rows.Add(row);  
                             }
@@ -158,11 +163,13 @@ namespace Budget.TimerFunction.Azure
                                 row["ResourceId"] = snapshotId;
                                 row["CreationDate"] = creationDate.ToString();
                                 row["IsOrphaned"] = false;
+                                row["AlertMessage"] = "";
                                 row["DateAdded"] = DateTime.Now;
 
                                 if(diff > 15)
                                 {
                                     row["IsOrphaned"] = true;
+                                    row["AlertMessage"] = $"Snapshot with Resource ID - {snapshotId} which is older than {diff} days exist, action needed.";
                                 }
                                 else
                                 {
@@ -196,7 +203,8 @@ namespace Budget.TimerFunction.Azure
 
                                     foreach (var ip in publicIPJson.value)
                                     {
-                                        row = sourceData.NewRow(); 
+                                        row = sourceData.NewRow();
+                                        string IPId =  ip.id;
 
                                         row["SubscriptionID"] = subscriptionIds;
                                         row["SubscriptionName"] = subscription.DisplayName;
@@ -206,6 +214,7 @@ namespace Budget.TimerFunction.Azure
                                         row["ResourceId"] = ip.id;
                                         row["CreationDate"] = "";
                                         row["IsOrphaned"] = false;
+                                        row["AlertMessage"] = "";
                                         row["DateAdded"] = DateTime.Now;
                                         if(ip.properties.ContainsKey("ipConfiguration"))
                                         {
@@ -214,6 +223,7 @@ namespace Budget.TimerFunction.Azure
                                         else
                                         {
                                             row["IsOrphaned"] = true;
+                                            row["AlertMessage"] = $"Public IP with Resoure ID - {IPId} is marked as an orphaned resource.";
                                         }
                                         sourceData.Rows.Add(row); 
                                     }
