@@ -12,7 +12,7 @@ using Microsoft.Identity.Client;
 using Microsoft.Rest;
 using Newtonsoft.Json;
 
-namespace Budget.TimerFunction
+namespace Budget.TimerFunction.Azure
 {
     public class TimerTrigger_OrphanedData
     {
@@ -54,6 +54,7 @@ namespace Budget.TimerFunction
                 sourceData.Columns.Add("ResourceName");
                 sourceData.Columns.Add("ResourceType");
                 sourceData.Columns.Add("ResourceId");
+                sourceData.Columns.Add("CreationDate");
                 sourceData.Columns.Add("IsOrphaned");
                 sourceData.Columns.Add("DateAdded");
 
@@ -64,8 +65,6 @@ namespace Budget.TimerFunction
                     string subscriptionIds = subscription.SubscriptionId;
                     if(subscription.State == SubscriptionState.Enabled)
                     {
-                        
-
                         //call api to get the virtual machine details
                         var vmApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/providers/Microsoft.Compute/virtualMachines?api-version=2022-11-01&statusOnly=true";
                         var vmResponse = httpClient.GetAsync(vmApiUrl).Result;
@@ -87,6 +86,7 @@ namespace Budget.TimerFunction
                                 row["ResourceName"] = vm.name;
                                 row["ResourceType"] = vm.type;
                                 row["ResourceId"] = vmId;
+                                row["CreationDate"] = vm.properties.instanceView.statuses[0].time;
                                 row["IsOrphaned"] = false;
                                 row["DateAdded"] = DateTime.Now;
 
@@ -118,6 +118,7 @@ namespace Budget.TimerFunction
                                 row["ResourceName"] = disk.name;
                                 row["ResourceType"] = disk.type;
                                 row["ResourceId"] = diskId;
+                                row["CreationDate"] = disk.properties.timeCreated;
                                 row["IsOrphaned"] = false;
                                 row["DateAdded"] = DateTime.Now;
 
@@ -128,13 +129,104 @@ namespace Budget.TimerFunction
                                 sourceData.Rows.Add(row);  
                             }
                         } 
+
+                        //call api to get list of snapshots using subscription ids
+                        string snapshotApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/providers/Microsoft.Compute/snapshots?api-version=2021-12-01";
+                        var snapshotResponse = httpClient.GetAsync(snapshotApiUrl).Result;
+
+                        if (snapshotResponse.IsSuccessStatusCode)
+                        {
+                            var result = snapshotResponse.Content.ReadAsStringAsync().Result;
+                            dynamic snapshotJson = JsonConvert.DeserializeObject(result);
+                            foreach (var item in snapshotJson.value)
+                            {
+                                DateTime creationDate = item.properties.timeCreated;
+                                DateTime todayDate = DateTime.Now;
+                                int diff = (todayDate - creationDate).Days;
+                                Console.WriteLine("{0} \n", diff);
+
+                                string snapshotId = item.id;
+                                string resourceGroupName = snapshotId.Split('/')[4];
+                            
+                                row = sourceData.NewRow(); 
+
+                                row["SubscriptionID"] = subscriptionIds;
+                                row["SubscriptionName"] = subscription.DisplayName;
+                                row["ResourceGroupName"] = resourceGroupName;
+                                row["ResourceName"] = item.name;
+                                row["ResourceType"] = item.type;
+                                row["ResourceId"] = snapshotId;
+                                row["CreationDate"] = creationDate.ToString();
+                                row["IsOrphaned"] = false;
+                                row["DateAdded"] = DateTime.Now;
+
+                                if(diff > 15)
+                                {
+                                    row["IsOrphaned"] = true;
+                                }
+                                else
+                                {
+                                    row["IsOrphaned"] = false;
+                                }
+                                sourceData.Rows.Add(row);  
+                            }
+                        }
+
+                        //call api to get list of resource groups using subscription ids
+                        string resourceApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/resourcegroups?api-version=2021-04-01";
+                        var resourceGroupResponse = httpClient.GetAsync(resourceApiUrl).Result;
+
+                        if (resourceGroupResponse.IsSuccessStatusCode)
+                        {
+                            var result = resourceGroupResponse.Content.ReadAsStringAsync().Result;
+                            dynamic resourceGroupJson = JsonConvert.DeserializeObject(result);
+                            foreach (var rgname in resourceGroupJson.value)
+                            {
+                                Console.WriteLine("{0} \n", rgname.name);
+                                string rgName = Convert.ToString(rgname.name);
+                                log.LogInformation("ResourceGrouptName for Subscription id " +subscription.SubscriptionId + " is " + rgName);
+                            
+                                //call api to get the Public IP details
+                                var publicIPUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/resourceGroups/{rgName}/providers/Microsoft.Network/publicIPAddresses?api-version=2022-09-01";
+                                var publicIPResponse = httpClient.GetAsync(publicIPUrl).Result;
+                                if (publicIPResponse.IsSuccessStatusCode)
+                                {
+                                    var ipResult = publicIPResponse.Content.ReadAsStringAsync().Result;
+                                    dynamic publicIPJson = JsonConvert.DeserializeObject(ipResult);
+
+                                    foreach (var ip in publicIPJson.value)
+                                    {
+                                        row = sourceData.NewRow(); 
+
+                                        row["SubscriptionID"] = subscriptionIds;
+                                        row["SubscriptionName"] = subscription.DisplayName;
+                                        row["ResourceGroupName"] = rgName;
+                                        row["ResourceName"] = ip.name;
+                                        row["ResourceType"] = ip.type;
+                                        row["ResourceId"] = ip.id;
+                                        row["CreationDate"] = "";
+                                        row["IsOrphaned"] = false;
+                                        row["DateAdded"] = DateTime.Now;
+                                        if(ip.properties.ContainsKey("ipConfiguration"))
+                                        {
+                                            row["IsOrphaned"] = false;
+                                        }
+                                        else
+                                        {
+                                            row["IsOrphaned"] = true;
+                                        }
+                                        sourceData.Rows.Add(row); 
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 if(sourceData.Rows.Count > 0)
                 {
                     using (SqlConnection connection = new SqlConnection(myConnectionString))
                     {
-                        SqlCommand command = new SqlCommand("DELETE FROM OrphanedData;", connection);
+                        SqlCommand command = new SqlCommand("Truncate Table OrphanedData;", connection);
                         command.Connection.Open();
                         command.ExecuteNonQuery();
                         command.Connection.Close();

@@ -12,7 +12,7 @@ namespace Budget.TimerFunction
 
     public class Name
     {
-        public string values { get; set; }
+        public string value { get; set; }
         public string localizedValue { get; set; }
     }
 
@@ -21,7 +21,7 @@ namespace Budget.TimerFunction
         public int cost { get; set; }
         public string timespan { get; set; }
         public string interval { get; set; }
-        public List<Values> values { get; set; }
+        public List<Values> value { get; set; }
         public string @namespace { get; set; }
         public string resourceregion { get; set; }
     }

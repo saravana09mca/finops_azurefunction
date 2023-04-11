@@ -24,10 +24,13 @@
     "GCP_ToDate": "2023-03-05",
     "GCP_IsManualDateRange": "True",
     "GCP_DataDaysDiff": -10,
-    "GCPBillingCostTimer": "0 */0 * * * * ",
-    "GCPAdvisorTimer": "0 */0 * * * *",
-    "GCPTagsTimer": "0 */0 * * * *",
-    "GCPUtilizationTimer": "0 */0 * * * *",
+
+    "GCP_DailyTimer": "0 */0 * * * *",
+    "GCP_WeeklyTimer": "0 */0 * * * *",
+    "GCP_CustomTimer": "0 */0 * * * *",
+    "GCP_CarbonTimer": "0 */0 * * * *",
+
+
     "GCP_UtilizationDataDateDiff": "-1",
     "GCP_UtilizationProjectId": "eygds-sandbox-cloud-359111",
     "GCP_UtilizationDatasetId": "metric_export",
@@ -38,6 +41,10 @@
     "GCP_AdvisorTableId": "recommendations_export",
     "GCP_AdvisorInsightsTableId": "insights_export",
 
+    "GCP_BudgetProjectId": "eygds-sandbox-cloud-359111",
+    "GCP_BudgetDatasetId": "test_vm",
+    "GCP_BudgetTableId": "pubsub_bq_budget",
+
     "DestinationContainerHistory": "historydata-file-transfer",
     "DestinationBlobNameHistory": "testazure/costconsumptiondata/",
 
@@ -45,7 +52,7 @@
     "AwsSecretKey": "7U0D2a/OSzSEvsXIoNWUVj85vRMIIOWlslG+fcSz",
     "AwsBucketName": "finops-pov",
     "AwsRegion": "us-east-1",
-    "AwsDailyTimer": "0 0 1 * * *",
+    "AwsDailyTimer": "0 */0 * * * *",
     "AwsWeekelyTimer": "0 0 9 * * Mon",
     "AwsCustomTimer": "0 */1 * * * *",
 

@@ -12,7 +12,7 @@ using Microsoft.Identity.Client;
 using Microsoft.Rest;
 using Newtonsoft.Json;
 
-namespace Budget.TimerFunction
+namespace Budget.TimerFunction.Azure
 {
     public class TimerTrigger_ResourceTag
     {
@@ -125,7 +125,7 @@ namespace Budget.TimerFunction
                     {
                         using (SqlConnection connection = new SqlConnection(myConnectionString))
                         {
-                            SqlCommand command = new SqlCommand("DELETE FROM ResourceTag;", connection);
+                            SqlCommand command = new SqlCommand("Truncate Table ResourceTag;", connection);
                             command.Connection.Open();
                             command.ExecuteNonQuery();
                             command.Connection.Close();

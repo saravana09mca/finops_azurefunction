@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
-namespace AzureFunction
+namespace Budget.TimerFunction.Aws
 {
     
     public class AWSCloudConsumptionFunction

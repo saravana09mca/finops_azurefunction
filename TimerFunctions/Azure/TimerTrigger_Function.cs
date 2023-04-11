@@ -20,7 +20,7 @@ using Microsoft.Azure.Storage;
 using System.Linq;
 using Microsoft.Azure.Management.Subscription.Models;
 
-namespace Budget.TimerFunction
+namespace Budget.TimerFunction.Azure
 {
     public class TimerTrigger_Function
     {

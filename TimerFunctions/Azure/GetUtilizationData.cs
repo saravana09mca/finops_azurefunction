@@ -12,7 +12,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 
-namespace Budget.TimerFunction
+namespace Budget.TimerFunction.Azure
 {
     public class GetUtilizationData
     {
@@ -102,16 +102,16 @@ namespace Budget.TimerFunction
                                         var utilization = JsonConvert.DeserializeObject<Utilization>(utilizationResult);
                                         var currentDate = startDate;
 
-                                        while(currentDate <= endDate && utilization.values[0].timeseries.Count > 0)
+                                        while(currentDate <= endDate && utilization.value[0].timeseries.Count > 0)
                                         {
-                                            var vmAvgUtil = utilization.values[0].timeseries[0].data.Where(y => y.timeStamp.Date.ToShortDateString() ==  currentDate.ToShortDateString()).Count() == 0 ? 0 : utilization.values[0].timeseries[0].data.Where(y => y.timeStamp.Date.ToShortDateString() ==  currentDate.ToShortDateString()).Average(x => x.average);
-                                            var vmMinUtil = utilization.values[0].timeseries[0].data.Where(y => y.timeStamp.Date.ToShortDateString() ==  currentDate.ToShortDateString()).Count() == 0 ? 0 : utilization.values[0].timeseries[0].data.Where(y => y.timeStamp.Date.ToShortDateString() ==  currentDate.ToShortDateString()).Min(x => x.average);
-                                            var vmMaxUtil = utilization.values[0].timeseries[0].data.Where(y => y.timeStamp.Date.ToShortDateString() ==  currentDate.ToShortDateString()).Count() == 0 ? 0 : utilization.values[0].timeseries[0].data.Where(y => y.timeStamp.Date.ToShortDateString() ==  currentDate.ToShortDateString()).Max(x => x.average);
+                                            var vmAvgUtil = utilization.value[0].timeseries[0].data.Where(y => y.timeStamp.Date.ToShortDateString() ==  currentDate.ToShortDateString()).Count() == 0 ? 0 : utilization.value[0].timeseries[0].data.Where(y => y.timeStamp.Date.ToShortDateString() ==  currentDate.ToShortDateString()).Average(x => x.average);
+                                            var vmMinUtil = utilization.value[0].timeseries[0].data.Where(y => y.timeStamp.Date.ToShortDateString() ==  currentDate.ToShortDateString()).Count() == 0 ? 0 : utilization.value[0].timeseries[0].data.Where(y => y.timeStamp.Date.ToShortDateString() ==  currentDate.ToShortDateString()).Min(x => x.average);
+                                            var vmMaxUtil = utilization.value[0].timeseries[0].data.Where(y => y.timeStamp.Date.ToShortDateString() ==  currentDate.ToShortDateString()).Count() == 0 ? 0 : utilization.value[0].timeseries[0].data.Where(y => y.timeStamp.Date.ToShortDateString() ==  currentDate.ToShortDateString()).Max(x => x.average);
                                             sourceData.Rows.Add(null, subscriptionId, resourceGroup,
                                             vmName, utilization.cost, utilization.resourceregion,
-                                            currentDate, utilization.values[0].name.values, vmAvgUtil, vmMinUtil, vmMaxUtil);
+                                            currentDate, utilization.value[0].name.value, vmAvgUtil, vmMinUtil, vmMaxUtil);
                                             currentDate = currentDate.AddDays(1);
-                                        }                               
+                                        }                              
                                     }
                                 }
                             }                           
