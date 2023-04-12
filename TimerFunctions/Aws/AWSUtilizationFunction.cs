@@ -34,6 +34,7 @@ namespace Budget.TimerFunction.Aws
             ListObjectsResponse res = await s3Client.ListObjectsAsync(request);
             DataTable sourceData = new();
             sourceData.Columns.Add("Id");
+            sourceData.Columns.Add("AccountID");
             sourceData.Columns.Add("ServiceCategory");
             sourceData.Columns.Add("InstnceID");
             sourceData.Columns.Add("State");
@@ -45,6 +46,7 @@ namespace Budget.TimerFunction.Aws
             sourceData.Columns.Add("Maximum");
             sourceData.Columns.Add("Timestamp");
             sourceData.Columns.Add("Tags");
+            sourceData.Columns.Add("InsertDate");
 
             try
             {
@@ -52,45 +54,33 @@ namespace Budget.TimerFunction.Aws
                 {
                     if (obj.Size != 0)
                     {
-                        if (obj.LastModified.ToString("yyyy/MM/dd") == DateTime.Today.ToString("yyyy/MM/dd"))
-                        {
-                            //Add Latest object to Latest Object List
-                            LatestObjReqlist.S3Objects.Add(obj);
-                        }
-                        else
-                        {
-                            //Add old object to deleteObject List
-                            deleteObjReqlist.S3Objects.Add(obj);
-                        }
-                    }
-                }
-                //Select the latest Object based on LastModified
-                S3Object LatestObject = LatestObjReqlist.S3Objects.OrderBy(a => a.LastModified).LastOrDefault();
-                if (LatestObject != null)
-                {
-                    //Extract the Data from the CSV file
-                    var response = s3Client.GetObjectAsync(ConfigStore.Aws.BucketName, LatestObject.Key).Result;
-                    using StreamReader reader = new StreamReader(response.ResponseStream);
-                    using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-                    using var dr = new CsvDataReader(csv);
+                        var response = s3Client.GetObjectAsync(ConfigStore.Aws.BucketName, obj.Key).Result;
+                        using StreamReader reader = new StreamReader(response.ResponseStream);
+                        using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+                        using var dr = new CsvDataReader(csv);
 
-                    while (dr.Read())
-                    {
-                        DataRow row = sourceData.NewRow();
-                        row["ServiceCategory"] = dr["ServiceCategory"];
-                        row["InstnceID"] = dr["InstnceID"];
-                        row["State"] = dr["State"];
-                        row["ServiceType"] = dr["ServiceType"];
-                        row["Region"] = dr["Region"];
-                        row["Metric"] = dr["Metric"];
-                        row["Average"] = dr["Average"];
-                        row["Minimum"] = dr["Minimum"];
-                        row["Maximum"] = dr["Maximum"];
-                        row["Timestamp"] = dr["Timestamp"];
-                        row["Tags"] = dr["Tags"];
-                        sourceData.Rows.Add(row);
+                        while (dr.Read())
+                        {
+                            DataRow row = sourceData.NewRow();
+                            row["AccountID"] = dr["AccountID"];
+                            row["ServiceCategory"] = dr["ServiceCategory"];
+                            row["InstnceID"] = dr["InstnceID"];
+                            row["State"] = dr["State"];
+                            row["ServiceType"] = dr["ServiceType"];
+                            row["Region"] = dr["Region"];
+                            row["Metric"] = dr["Metric"];
+                            row["Average"] = dr["Average"];
+                            row["Minimum"] = dr["Minimum"];
+                            row["Maximum"] = dr["Maximum"];
+                            row["Timestamp"] = dr["Timestamp"];
+                            row["Tags"] = dr["Tags"];
+                            row["InsertDate"] = DateTime.Now;
+                            sourceData.Rows.Add(row);
+                        }
+                        deleteObjReqlist.S3Objects.Add(obj);
                     }
                 }
+               
                 if (sourceData.Rows.Count > 0)
                 {
                     using (SqlConnection sourceConnection = new SqlConnection(ConfigStore.SQLConnectionString))

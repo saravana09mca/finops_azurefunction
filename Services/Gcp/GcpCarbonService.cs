@@ -7,9 +7,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Budget.TimerFunction.GCPAdvisorModel;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Http;
-using Budget.TimerFunction.Gcp;
-using Budget.TimerFunction.GcpBudgetModel;
 using System.Data;
 
 namespace AzureFunction.Services.Gcp
