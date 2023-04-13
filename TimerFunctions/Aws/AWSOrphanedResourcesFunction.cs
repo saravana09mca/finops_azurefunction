@@ -2,7 +2,6 @@ using System;
 using Amazon.Runtime;
 using Amazon.S3.Model;
 using Amazon.S3;
-using Budget.TimerFunction;
 using CsvHelper;
 using System.Data.SqlClient;
 using System.Data;
@@ -14,76 +13,88 @@ using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using System.Drawing;
 using System.Linq;
+using Itinero.Algorithms.Weights;
+using Grpc.Core;
+using System.Collections.Generic;
+using Microsoft.Extensions.FileProviders;
+using System.Net.Sockets;
 
 namespace Budget.TimerFunction.Aws
 {
     public class AWSOrphanedResourcesFunction
     {
         [FunctionName("AWSOrphanedResourcesFunction")]
-        public async Task RunAsync([TimerTrigger("%AwsWeekelyTimer%")] TimerInfo myTimer, ILogger log)
+        //public async Task RunAsync([TimerTrigger("%AwsWeekelyTimer%")] TimerInfo myTimer, ILogger log)
+        //{
+        public async Task RunAsync([TimerTrigger("%AwsCustomTimer%")] TimerInfo myTimer, ILogger log)
         {
             log.LogInformation($"AWSOrphanedResources function executed at: {DateTime.Now}");
 
             bool IsBulkInsertResult = false;
             AmazonS3Client s3Client = new(new BasicAWSCredentials(ConfigStore.Aws.AccessKey, ConfigStore.Aws.SecretKey), Amazon.RegionEndpoint.USEast1);
             ListObjectsRequest request = new();
-            ListObjectsResponse deleteObjReqlist = new();
-            ListObjectsResponse LatestObjReqlist = new();
-
-            request.BucketName = ConfigStore.Aws.BucketName;
+            ListObjectsResponse MoveOldObjReqlist = new();
+            string DestinationFolders = "orphanedresource/Backups Files";
+            List<string> AccountsIds = new List<string>();
+            List<string> accountIds = new();
+            if (!string.IsNullOrEmpty(ConfigStore.Aws.AccountIds))
+            {
+                accountIds = ConfigStore.Aws.AccountIds.Split(",").ToList();
+            }
+            request.BucketName = ConfigStore.Aws.NewBucketName;
             request.Prefix = "orphanedresource";
             ListObjectsResponse res = await s3Client.ListObjectsAsync(request);
             DataTable sourceData = new();
             sourceData.Columns.Add("Id");
+            sourceData.Columns.Add("accountID");
             sourceData.Columns.Add("ServiceCategory");
             sourceData.Columns.Add("ResourceID");
             sourceData.Columns.Add("Status");
-            sourceData.Columns.Add("InstanceAssociated");
+            sourceData.Columns.Add("ResourceAssociated");
             sourceData.Columns.Add("Size");
-            sourceData.Columns.Add("Type");
-            sourceData.Columns.Add("Tags");
+            sourceData.Columns.Add("Type");            
             sourceData.Columns.Add("Region");
+            sourceData.Columns.Add("CreatedOn");
+            sourceData.Columns.Add("Tags");
 
             try
             {
-                foreach (S3Object obj in res.S3Objects)   
+                //.OrderBy(a => a.LastModified).Take(5)
+                foreach (S3Object obj in res.S3Objects.Distinct().OrderBy(a => a.LastModified))
                 {
-                    if (obj.Size != 0)
+                    if (!obj.Key.EndsWith("/")) // Check if it's not a folder
                     {
-                        if (obj.LastModified.ToString("yyyy/MM/dd") == DateTime.Today.ToString("yyyy/MM/dd"))
-                        {
+                        if (obj.Size != 0)
+                        {  
+                            string[] newString = obj.Key.Split(new string[] { "_" }, StringSplitOptions.RemoveEmptyEntries);
+                            string AccountId = newString[0].Substring(newString[0].IndexOf('/') + 1);
                             //Add Latest object to Latest Object List
-                            LatestObjReqlist.S3Objects.Add(obj);
-                        }
-                        else
-                        {
-                            //Add old object to deleteObject List
-                            deleteObjReqlist.S3Objects.Add(obj);
-                        }
-                    }
-                }
-                //Select the latest Object based on LastModified
-                S3Object LatestObject = LatestObjReqlist.S3Objects.OrderBy(a => a.LastModified).LastOrDefault();
-                if (LatestObject != null)
-                {
-                    //Extract the Data from the CSV file
-                    var response = s3Client.GetObjectAsync(ConfigStore.Aws.BucketName, LatestObject.Key).Result;
-                    using StreamReader reader = new StreamReader(response.ResponseStream);
-                    using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-                    using var dr = new CsvDataReader(csv);
+                            if(accountIds.Contains(AccountId))
+                            {
+                                MoveOldObjReqlist.S3Objects.Add(obj);
+                                //Extract the Data from the CSV file
+                                var response = s3Client.GetObjectAsync(ConfigStore.Aws.NewBucketName, obj.Key).Result;
+                                using StreamReader reader = new StreamReader(response.ResponseStream);
+                                using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+                                using var dr = new CsvDataReader(csv);
 
-                    while (dr.Read())
-                    {
-                        DataRow row = sourceData.NewRow();
-                        row["ServiceCategory"] = dr["Service Category"];
-                        row["ResourceID"] = dr["ResourceID"];
-                        row["Status"] = dr["Status"];
-                        row["InstanceAssociated"] = dr["Instance_Associated"];
-                        row["Size"] = dr["Size"];
-                        row["Type"] = dr["Type"];
-                        row["Tags"] = dr["Tags"];
-                        row["Region"] = dr["Region"];
-                        sourceData.Rows.Add(row);
+                                while (dr.Read())
+                                {
+                                    DataRow row = sourceData.NewRow();
+                                    row["accountID"] = dr["AccountID"];
+                                    row["ServiceCategory"] = dr["Service Category"];
+                                    row["ResourceID"] = dr["ResourceID"];
+                                    row["Status"] = dr["Status"];
+                                    row["ResourceAssociated"] = dr["Resource_Associated"];
+                                    row["Size"] = dr["Size"];
+                                    row["Type"] = dr["Type"];
+                                    row["Region"] = dr["Region"];
+                                    row["CreatedOn"] = dr["CreatedOn"];
+                                    row["Tags"] = dr["Tags"];
+                                    sourceData.Rows.Add(row);
+                                }
+                            }
+                        }
                     }
                 }
                 if (sourceData.Rows.Count > 0)
@@ -106,20 +117,13 @@ namespace Budget.TimerFunction.Aws
                         sourceConnection.Close();
                     }
                 }
-                //After succesful bulk insert delete old files from s3 bucket
-                if (IsBulkInsertResult == true && deleteObjReqlist.S3Objects.Count>0)
-                {
-                    foreach (S3Object oldObj in deleteObjReqlist.S3Objects)
-                    {
-                        //Add Key name and Bucket name in deleteObjectRequest
-                        DeleteObjectRequest deleteObjReq = new DeleteObjectRequest
-                        {
-                            BucketName = oldObj.BucketName,
-                            Key = oldObj.Key
-                        };
-                        //Perform Delete operation 
-                        await s3Client.DeleteObjectAsync(deleteObjReq);
-                    }
+                //After succesful bulk insert move old file from s3 bucket to backup folder 
+                if (IsBulkInsertResult == true && MoveOldObjReqlist.S3Objects.Count>0)
+                {  
+                   //Delete Old backup files
+                    DeleteOldBackUpFiles(s3Client, DestinationFolders, ConfigStore.Aws.NewBucketName);
+                   //Add New backups files
+                    CopyingFilesToBackUpFolder(s3Client, DestinationFolders);
                 }
             }
 
@@ -127,6 +131,70 @@ namespace Budget.TimerFunction.Aws
             {
                 Console.WriteLine(Excep.Message, Excep.InnerException);
             }
+        }
+
+        public void DeleteOldBackUpFiles(AmazonS3Client s3Client, string folderName, string bucketName)
+        {
+            var listRequest = new ListObjectsV2Request
+
+            {
+                BucketName = bucketName,
+                Prefix = folderName
+
+            };
+            ListObjectsV2Response listResponse;
+
+            do
+            {
+                listResponse = s3Client.ListObjectsV2Async(listRequest).GetAwaiter().GetResult();
+                foreach (var file in listResponse.S3Objects)
+                {
+
+                    if (!file.Key.EndsWith("/")) // Check if it's not a folder
+                    {
+                        s3Client.DeleteObjectAsync(bucketName, file.Key).GetAwaiter().GetResult();
+                    }
+                }
+                listRequest.ContinuationToken = listResponse.NextContinuationToken;
+            } while (listResponse.IsTruncated);
+
+        }
+
+        public async void CopyingFilesToBackUpFolder(AmazonS3Client s3Client, string DestinationFolder)
+        {
+            var listRequest = new ListObjectsV2Request
+            {
+              BucketName = ConfigStore.Aws.BucketName,
+              Prefix = "orphanedresource" // Only list objects in the specified source folder
+            };
+            ListObjectsV2Response listResponse;
+            do
+            {
+
+                listResponse = await s3Client.ListObjectsV2Async(listRequest);
+                foreach (var s3Object in listResponse.S3Objects)
+                {
+                    if (!s3Object.Key.EndsWith("/")) // Check if it's not a folder
+                    {
+                        string fileName = Path.GetFileName(s3Object.Key);
+                        var copyRequest = new CopyObjectRequest
+                        {
+                            SourceBucket = ConfigStore.Aws.BucketName,
+                            SourceKey = s3Object.Key,
+                            DestinationBucket = ConfigStore.Aws.BucketName,
+                            DestinationKey = DestinationFolder + "/" + fileName
+                        };
+                        s3Client.CopyObjectAsync(copyRequest).GetAwaiter();
+                        var deleteRequest = new DeleteObjectRequest
+                        {
+                            BucketName = ConfigStore.Aws.BucketName,
+                            Key = s3Object.Key
+                        };
+                        s3Client.DeleteObjectAsync(deleteRequest).GetAwaiter();
+                    }
+                }
+                listRequest.ContinuationToken = listResponse.NextContinuationToken;
+            } while (listResponse.IsTruncated);
         }
     }
 }
