@@ -3,6 +3,7 @@ using Google.Cloud.BigQuery.V2;
 using System;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
+using Budget.TimerFunction.Gcp;
 using Budget.TimerFunction.GcpBudgetModel;
 using System.Data;
 
