@@ -13,7 +13,6 @@ using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using System.Drawing;
 using System.Linq;
-using Itinero.Algorithms.Weights;
 using Grpc.Core;
 using System.Collections.Generic;
 using Microsoft.Extensions.FileProviders;
