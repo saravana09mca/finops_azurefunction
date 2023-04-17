@@ -159,7 +159,7 @@ namespace Budget.TimerFunction.Aws
                 {
 
                     if (!file.Key.EndsWith("/")) // Check if it's not a folder
-                    {
+                    {
                         s3Client.DeleteObjectAsync(bucketName, file.Key).GetAwaiter().GetResult();
                     }
                 }
@@ -174,7 +174,7 @@ namespace Budget.TimerFunction.Aws
             {
                 BucketName = ConfigStore.Aws.NewBucketName,
                 Prefix = "orphanedresource" // Only list objects in the specified source folder
-            };
+Â Â Â Â Â Â Â Â Â Â Â  };
             ListObjectsV2Response listResponse;
             do
             {
@@ -183,7 +183,7 @@ namespace Budget.TimerFunction.Aws
                 foreach (var s3Object in listResponse.S3Objects)
                 {
                     if (!s3Object.Key.EndsWith("/")) // Check if it's not a folder
-                    {
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  {
                         string fileName = Path.GetFileName(s3Object.Key);
                         var copyRequest = new CopyObjectRequest
                         {
