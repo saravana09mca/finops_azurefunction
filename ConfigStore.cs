@@ -50,13 +50,7 @@ namespace Budget.TimerFunction
             public static string AccessKey { get; } = Environment.GetEnvironmentVariable("AwsAccessKey");
             public static string SecretKey { get; } = Environment.GetEnvironmentVariable("AwsSecretKey");
             public static string BucketName { get; } = Environment.GetEnvironmentVariable("AwsBucketName");
-            public static string NewBucketName { get; } = Environment.GetEnvironmentVariable("AWSNewAccBucketName");
-            public static string AccountIds { get; } = Environment.GetEnvironmentVariable("AwsAccoundIds");
-            public static string HistoryFiles { get; } = Environment.GetEnvironmentVariable("HistoryFiles");
-
             public static RegionEndpoint Region { get; } = RegionEndpoint.GetBySystemName(Environment.GetEnvironmentVariable("AwsRegion") ?? RegionEndpoint.USEast1.SystemName);
         }
-
-       
     }
 }
