@@ -145,7 +145,7 @@ namespace Budget.TimerFunction.Aws
                 {
 
                     if (!file.Key.EndsWith("/")) // Check if it's not a folder
-                    {
+                    {
                         s3Client.DeleteObjectAsync(bucketName, file.Key).GetAwaiter().GetResult();
                     }
                 }
@@ -160,7 +160,7 @@ namespace Budget.TimerFunction.Aws
             {
                 BucketName = ConfigStore.Aws.NewBucketName,
                 Prefix = "tagcomplaince" // Only list objects in the specified source folder
-            };
+            };
             ListObjectsV2Response listResponse;
             do
             {
