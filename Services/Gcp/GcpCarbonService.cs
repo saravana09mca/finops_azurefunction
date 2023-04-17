@@ -1,12 +1,9 @@
 ﻿using Budget.TimerFunction;
 using Google.Cloud.BigQuery.V2;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Budget.TimerFunction.GCPAdvisorModel;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
+using Budget.TimerFunction.GcpBudgetModel;
 using System.Data;
 
 namespace AzureFunction.Services.Gcp

@@ -50,11 +50,13 @@
 
     "AwsAccessKey": "AKIATPOBGAQSVOZUWHCB",
     "AwsSecretKey": "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",
-    "AwsBucketName": "finops-povfiles",
+    "AwsBucketName": "finops-pov",
+    "AWSNewAccBucketName": "finops-povfiles",
+    "AwsAccoundIds": "854132807883,816317703224,304246146459,239312700453,161079138120",
+    "HistoryFiles": "",
     "AwsRegion": "us-east-1",
-    "AwsDailyTimer": "0 */0 * * * *",
-    "AwsWeekelyTimer": "0 */0 * * * *",
-    //"AwsWeekelyTimer": "0 0 9 * * Mon",
+    "AwsDailyTimer": "0 0 6 * * *",
+    "AwsWeekelyTimer": "0 0 9 * * Mon",
     "AwsCustomTimer": "0 */1 * * * *",
 
 
