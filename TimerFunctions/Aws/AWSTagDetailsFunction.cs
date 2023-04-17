@@ -169,7 +169,7 @@ namespace Budget.TimerFunction.Aws
                 foreach (var s3Object in listResponse.S3Objects)
                 {
                     if (!s3Object.Key.EndsWith("/")) // Check if it's not a folder
-                    {
+                    { 
                         string fileName = Path.GetFileName(s3Object.Key);
                         var copyRequest = new CopyObjectRequest
                         {
