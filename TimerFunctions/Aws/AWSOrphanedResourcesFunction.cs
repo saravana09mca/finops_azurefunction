@@ -13,12 +13,11 @@ using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using System.Drawing;
 using System.Linq;
+using Itinero.Algorithms.Weights;
 using Grpc.Core;
 using System.Collections.Generic;
 using Microsoft.Extensions.FileProviders;
 using System.Net.Sockets;
-using Microsoft.Identity.Client;
-using Azure.Storage.Blobs.Models;
 
 namespace Budget.TimerFunction.Aws
 {
@@ -35,8 +34,8 @@ namespace Budget.TimerFunction.Aws
             AmazonS3Client s3Client = new(new BasicAWSCredentials(ConfigStore.Aws.AccessKey, ConfigStore.Aws.SecretKey), Amazon.RegionEndpoint.USEast1);
             ListObjectsRequest request = new();
             ListObjectsResponse MoveOldObjReqlist = new();
-            string DestinationFolders = "orphanedresource/backup";
-            
+            string DestinationFolders = "orphanedresource/Backups Files";
+            List<string> AccountsIds = new List<string>();
             List<string> accountIds = new();
             if (!string.IsNullOrEmpty(ConfigStore.Aws.AccountIds))
             {
@@ -47,7 +46,7 @@ namespace Budget.TimerFunction.Aws
             ListObjectsResponse res = await s3Client.ListObjectsAsync(request);
             DataTable sourceData = new();
             sourceData.Columns.Add("Id");
-            sourceData.Columns.Add("AccountID");
+            sourceData.Columns.Add("accountID");
             sourceData.Columns.Add("ServiceCategory");
             sourceData.Columns.Add("ResourceID");
             sourceData.Columns.Add("Status");
@@ -72,19 +71,17 @@ namespace Budget.TimerFunction.Aws
                             //Add Latest object to Latest Object List
                             if(accountIds.Contains(AccountId))
                             {
-                                accountIds.Remove(AccountId);
                                 MoveOldObjReqlist.S3Objects.Add(obj);
                                 //Extract the Data from the CSV file
                                 var response = s3Client.GetObjectAsync(ConfigStore.Aws.NewBucketName, obj.Key).Result;
                                 using StreamReader reader = new StreamReader(response.ResponseStream);
                                 using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
                                 using var dr = new CsvDataReader(csv);
-                                int i = 0;
+
                                 while (dr.Read())
                                 {
-                                    i++;
                                     DataRow row = sourceData.NewRow();
-                                    row["AccountID"] = dr["AccountID"];
+                                    row["accountID"] = dr["AccountID"];
                                     row["ServiceCategory"] = dr["Service Category"];
                                     row["ResourceID"] = dr["ResourceID"];
                                     row["Status"] = dr["Status"];
@@ -96,14 +93,9 @@ namespace Budget.TimerFunction.Aws
                                     row["Tags"] = dr["Tags"];
                                     sourceData.Rows.Add(row);
                                 }
-                                log.LogInformation($"Account ID {AccountId} -  {i} records processed.");
                             }
                         }
                     }
-                }
-                foreach (var accountId in accountIds)
-                {
-                    log.LogError($"Error - Account ID {accountId} not available in bucket");
                 }
                 if (sourceData.Rows.Count > 0)
                 {
@@ -172,7 +164,7 @@ namespace Budget.TimerFunction.Aws
         {
             var listRequest = new ListObjectsV2Request
             {
-              BucketName = ConfigStore.Aws.NewBucketName,
+              BucketName = ConfigStore.Aws.BucketName,
               Prefix = "orphanedresource" // Only list objects in the specified source folder
             };
             ListObjectsV2Response listResponse;
@@ -187,15 +179,15 @@ namespace Budget.TimerFunction.Aws
                         string fileName = Path.GetFileName(s3Object.Key);
                         var copyRequest = new CopyObjectRequest
                         {
-                            SourceBucket = ConfigStore.Aws.NewBucketName,
+                            SourceBucket = ConfigStore.Aws.BucketName,
                             SourceKey = s3Object.Key,
-                            DestinationBucket = ConfigStore.Aws.NewBucketName,
+                            DestinationBucket = ConfigStore.Aws.BucketName,
                             DestinationKey = DestinationFolder + "/" + fileName
                         };
                         s3Client.CopyObjectAsync(copyRequest).GetAwaiter();
                         var deleteRequest = new DeleteObjectRequest
                         {
-                            BucketName = ConfigStore.Aws.NewBucketName,
+                            BucketName = ConfigStore.Aws.BucketName,
                             Key = s3Object.Key
                         };
                         s3Client.DeleteObjectAsync(deleteRequest).GetAwaiter();

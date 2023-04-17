@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
+using Budget.TimerFunction.Gcp;
 using Budget.TimerFunction.GcpBudgetModel;
 
 namespace AzureFunction.Services.Gcp
