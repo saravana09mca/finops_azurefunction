@@ -3,7 +3,7 @@
   "Values": {
     "AzureWebJobsStorage": "DefaultEndpointsProtocol=https;AccountName=stblobfinops001;AccountKey=PzgWkZSqx6atUIXcv7EVacJae8OgEz0Tz5ukABOcZBeaEMSBP1VvjWJ4hwaCITXl25oDkF3QKfqZ+AStHMhxrA==;EndpointSuffix=core.windows.net",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet",
-    "LogType": "DB",
+    "LogType": "LOCAL",
     "AADClientId": "76cc8233-0905-4c15-830d-b7b7ffb72180",
     "AADTenantId": "8836bc45-fd11-4149-891a-9128540cacdd",
     "AADClientSecret": "rxK8Q~JtEOBe-0SesJ2SVlanAzR7xxG9p_J71cfg",
