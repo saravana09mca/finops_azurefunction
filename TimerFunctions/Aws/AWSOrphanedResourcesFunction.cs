@@ -21,12 +21,9 @@ namespace Budget.TimerFunction.Aws
     public class AWSOrphanedResourcesFunction
     {
         [FunctionName("AWSOrphanedResourcesFunction")]
-        //public async Task RunAsync([TimerTrigger("%AwsWeekelyTimer%")] TimerInfo myTimer, ILogger log)
-        //{
-        public async Task RunAsync([TimerTrigger("%AwsCustomTimer%")] TimerInfo myTimer, ILogger logger)
+        public async Task RunAsync([TimerTrigger("%AwsWeekelyTimer%")] TimerInfo myTimer, ILogger logger)
         {
             logger.Log(LogLevel.Information, "AWSOrphanedResources",$"AWSOrphanedResources function started.");
-
             bool IsBulkInsertResult = false;
             AmazonS3Client s3Client = new(new BasicAWSCredentials(ConfigStore.Aws.AccessKey, ConfigStore.Aws.SecretKey), Amazon.RegionEndpoint.USEast1);
             ListObjectsRequest request = new();
