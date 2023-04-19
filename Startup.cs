@@ -30,6 +30,7 @@ namespace Budget.TimerFunction
 
         public void InitializeConfigStore()
         {
+            ConfigStore.LogType = config.GetValue<string>("LogType");
             ConfigStore.AADAuthority = config.GetValue<string>("AADAuthority");
             ConfigStore.AADClientId = config.GetValue<string>("AADClientId");
             ConfigStore.AADTenantId = config.GetValue<string>("AADTenantId");

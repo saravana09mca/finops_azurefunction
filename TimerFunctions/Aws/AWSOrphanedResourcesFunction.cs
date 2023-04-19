@@ -9,16 +9,12 @@ using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
-using System.Drawing;
+
+
 using System.Linq;
-using Grpc.Core;
 using System.Collections.Generic;
-using Microsoft.Extensions.FileProviders;
-using System.Net.Sockets;
-using Microsoft.Identity.Client;
-using Azure.Storage.Blobs.Models;
+using Microsoft.Extensions.Logging;
+
 
 namespace Budget.TimerFunction.Aws
 {
@@ -27,9 +23,9 @@ namespace Budget.TimerFunction.Aws
         [FunctionName("AWSOrphanedResourcesFunction")]
         //public async Task RunAsync([TimerTrigger("%AwsWeekelyTimer%")] TimerInfo myTimer, ILogger log)
         //{
-        public async Task RunAsync([TimerTrigger("%AwsCustomTimer%")] TimerInfo myTimer, ILogger log)
+        public async Task RunAsync([TimerTrigger("%AwsCustomTimer%")] TimerInfo myTimer, ILogger logger)
         {
-            log.LogInformation($"AWSOrphanedResources function executed at: {DateTime.Now}");
+            logger.Log(LogLevel.Information, "AWSOrphanedResources",$"AWSOrphanedResources function started.");
 
             bool IsBulkInsertResult = false;
             AmazonS3Client s3Client = new(new BasicAWSCredentials(ConfigStore.Aws.AccessKey, ConfigStore.Aws.SecretKey), Amazon.RegionEndpoint.USEast1);
@@ -96,15 +92,17 @@ namespace Budget.TimerFunction.Aws
                                     row["Tags"] = dr["Tags"];
                                     sourceData.Rows.Add(row);
                                 }
-                                log.LogInformation($"Account ID {AccountId} -  {i} records processed.");
+                                logger.Log(LogLevel.Information, "AWSOrphanedResources", $"Account ID {AccountId} -  {i} records processed.");
                             }
                         }
                     }
                 }
-                foreach (var accountId in accountIds)
+                if (accountIds.Count > 0)
                 {
-                    log.LogError($"Error - Account ID {accountId} not available in bucket");
+                    logger.Log(LogLevel.Error, "AWSOrphanedResources", $"Error - Account's {string.Join(",", accountIds)} not available in bucket.");
+                    throw new Exception($"Error - Account's '{string.Join(",", accountIds)}' not found in AWS bucket.");
                 }
+
                 if (sourceData.Rows.Count > 0)
                 {
                     using (SqlConnection sourceConnection = new SqlConnection(ConfigStore.SQLConnectionString))
@@ -133,11 +131,13 @@ namespace Budget.TimerFunction.Aws
                     //Add New backups files
                     CopyingFilesToBackUpFolder(s3Client, DestinationFolders);
                 }
+                logger.Log(LogLevel.Information, "AWSOrphanedResources", $"AWS OrphanedResources function process completed.");
             }
 
-            catch (Exception Excep)
+            catch (Exception ex)
             {
-                Console.WriteLine(Excep.Message, Excep.InnerException);
+                logger.Log(LogLevel.Error, "AWSOrphanedResources", $"AWS Budget Exception : {ex.Message} - {ex.InnerException}");
+                throw;
             }
         }
 

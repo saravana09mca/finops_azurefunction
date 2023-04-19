@@ -5,6 +5,7 @@ namespace Budget.TimerFunction
 {
     public class ConfigStore
     {
+        public static string LogType { get; set; }
         public static string AADAuthority { get; set; }
         public static string AADClientId { get; set; }
         public static string AADTenantId { get; set; }

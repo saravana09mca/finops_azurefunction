@@ -534,7 +534,7 @@ namespace Budget.TimerFunction
                 }
                 
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }

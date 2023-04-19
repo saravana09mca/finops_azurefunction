@@ -2,29 +2,25 @@ using System;
 using Amazon.Runtime;
 using Amazon.S3.Model;
 using Amazon.S3;
-using Budget.TimerFunction;
-using CsvHelper;
-using System.Data.SqlClient;
 using System.Data;
-using System.Globalization;
-using System.IO;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
-using System.Linq;
+using CsvHelper;
+using System.Data.SqlClient;
+using System.Globalization;
+using System.IO;
 using System.Collections.Generic;
-using System.Threading;
+using System.Linq;
 
 namespace Budget.TimerFunction.Aws
 {
     public class AWSUtilizationFunction
     {
         [FunctionName("AWSUtilizationFunction")]
-        public async Task RunAsync([TimerTrigger("%AwsWeekelyTimer%")] TimerInfo myTimer, ILogger log)
+        public async Task RunAsync([TimerTrigger("%AwsWeekelyTimer%")] TimerInfo myTimer, ILogger logger)
         {
-            log.LogInformation($"AWSUtilization function executed at: {DateTime.Now}");
-
+            logger.Log(LogLevel.Information, "AWSUtilizationFunction", $"AWSUtilization function started.");
             AmazonS3Client s3Client = new(new BasicAWSCredentials(ConfigStore.Aws.AccessKey, ConfigStore.Aws.SecretKey), Amazon.RegionEndpoint.USEast1);
             ListObjectsRequest request = new();
             ListObjectsResponse MoveOldObjReqlist = new();
@@ -92,16 +88,17 @@ namespace Budget.TimerFunction.Aws
                                     row["InsertDate"] = DateTime.Now;
                                     sourceData.Rows.Add(row);
                                 }
-                                log.LogInformation($"Account ID {accountId} -  {i} records processed.");
+                                logger.Log(LogLevel.Information, "AWSUtilizationFunction", $"Account ID {accountId} -  {i} records processed.");
                                 MoveOldObjReqlist.S3Objects.Add(obj);
                             }
 
                         }
                     }
                 }
-                foreach (var accountId in accountIds)
+                if (accountIds.Count > 0)
                 {
-                    log.LogError($"Error - Account ID {accountId} not available in bucket");
+                    logger.Log(LogLevel.Information, "AWSUtilizationFunction", $"AWS Utilization Error - Account's {string.Join(",", accountIds)} not available in bucket.");
+                    throw new Exception($"AWS Utilization Error - Account's '{string.Join(",", accountIds)}' not found in AWS bucket");
                 }
 
                 if (sourceData.Rows.Count > 0)
@@ -130,11 +127,12 @@ namespace Budget.TimerFunction.Aws
                     DeleteOldBackUpFiles(s3Client, "utilizationreports/backup", ConfigStore.Aws.NewBucketName);
                     CopyingFilesToBackUpFolder(s3Client, "utilizationreports/backup");
                 }
+                logger.Log(LogLevel.Error, "AWSUtilizationFunction", $"AWS Utilization function process completed.");
             }
 
-            catch (Exception Excep)
+            catch (Exception ex)
             {
-                Console.WriteLine(Excep.Message, Excep.InnerException);
+                logger.Log(LogLevel.Error, "AWSUtilizationFunction", $"AWS Utilization Exception : {ex.Message} - {ex.InnerException}");
             }
         }
         public void DeleteOldBackUpFiles(AmazonS3Client s3Client, string folderName, string bucketName)
@@ -192,7 +190,6 @@ namespace Budget.TimerFunction.Aws
                             Key = s3Object.Key
                         };
                         await s3Client.DeleteObjectAsync(deleteRequest);
-                        Thread.Sleep(2000);
                     }
                 }
                 listRequest.ContinuationToken = listResponse.NextContinuationToken;
