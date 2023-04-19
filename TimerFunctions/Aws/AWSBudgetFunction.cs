@@ -4,7 +4,6 @@ using Amazon.S3.Model;
 using Amazon.S3;
 using System.Data;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using CsvHelper;
 using System.Data.SqlClient;
@@ -14,15 +13,16 @@ using System.Collections.Generic;
 using System.Linq;
 using Amazon.S3.Transfer;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Budget.TimerFunction.Aws
 {
     public class AWSBudgetFunction
     {
         [FunctionName("AWSBudgetFunction")]
-        public async Task RunAsync([TimerTrigger("%AwsWeekelyTimer%")] TimerInfo myTimer, ILogger log)
+        public async Task RunAsync([TimerTrigger("%AwsWeekelyTimer%")] TimerInfo myTimer, ILogger logger)
         {
-            log.LogInformation($"AWSBudget function executed at: {DateTime.Now}");
+            logger.Log(LogLevel.Information,"AWSBudgetFunction",$"AWSBudget function executed at: {DateTime.Now}");
             AmazonS3Client s3Client = new AmazonS3Client(new BasicAWSCredentials(ConfigStore.Aws.AccessKey, ConfigStore.Aws.SecretKey), Amazon.RegionEndpoint.USEast1);
             ListObjectsRequest request = new ListObjectsRequest();
             ListObjectsResponse MoveOldObjReqlist = new();
@@ -85,14 +85,15 @@ namespace Budget.TimerFunction.Aws
                                 row["InsertDate"] = DateTime.Now;
                                 sourceData.Rows.Add(row);
                             }
-                            log.LogInformation($"Account ID {accountId} -  {i} records processed.");
+                            logger.Log(LogLevel.Information, "AWSBudgetFunction", $"Account ID {accountId} -  {i} records processed.");
                         }
                     }
                 }
 
-                foreach (var accountId in accountIds)
+                if (accountIds.Count > 0)
                 {
-                    log.LogError($"Error - Account ID {accountId} not available in bucket");
+                    logger.Log(LogLevel.Error, "AWSBudgetFunction", $"Error - Account's {string.Join(",", accountIds)} not available in bucket.");
+                    throw new Exception($"Error - Account's '{string.Join(",", accountIds)}' not found in AWS bucket.");
                 }
 
                 if (sourceData.Rows.Count > 0)
@@ -120,11 +121,11 @@ namespace Budget.TimerFunction.Aws
                     DeleteOldBackUpFiles(s3Client, "budgetreports/backup", ConfigStore.Aws.NewBucketName);
                     CopyingFilesToBackUpFolder(s3Client, "budgetreports/backup");
                 }
+                logger.Log(LogLevel.Information, "AWSBudgetFunction", $"AWS Budget function process completed.");
             }
-
-            catch (Exception Excep)
+            catch (Exception ex)
             {
-                Console.WriteLine(Excep.Message, Excep.InnerException);
+                logger.Log(LogLevel.Error, "AWSBudgetFunction", $"AWS Budget Exception : {ex.Message} - {ex.InnerException}");
                 throw;
             }
         }

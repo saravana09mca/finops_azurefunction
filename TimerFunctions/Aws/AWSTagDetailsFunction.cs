@@ -4,17 +4,13 @@ using Amazon.S3.Model;
 using Amazon.S3;
 using System.Data;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
-using Amazon.Auth.AccessControlPolicy;
 using CsvHelper;
 using System.Data.SqlClient;
 using System.Globalization;
-using System.IO.Compression;
 using System.IO;
 using System.Collections.Generic;
-using System.Collections;
 using System.Linq;
 
 namespace Budget.TimerFunction.Aws
@@ -22,9 +18,9 @@ namespace Budget.TimerFunction.Aws
     public class AWSTagDetailsFunction
     {
         [FunctionName("AWSTagDetailsFunction")]
-        public async Task RunAsync([TimerTrigger("%AwsWeekelyTimer%")] TimerInfo myTimer, ILogger log)
+        public async Task RunAsync([TimerTrigger("%AwsWeekelyTimer%")] TimerInfo myTimer, ILogger logger)
         {
-            log.LogInformation($"AWSTagDetails function executed at: {DateTime.Now}");
+            logger.Log(LogLevel.Information, "AWSTagDetailsFunction", $"AWSTagDetails function started.");
             AmazonS3Client s3Client = new AmazonS3Client(new BasicAWSCredentials(ConfigStore.Aws.AccessKey, ConfigStore.Aws.SecretKey), Amazon.RegionEndpoint.USEast1);
             ListObjectsRequest request = new ListObjectsRequest();
             ListObjectsResponse MoveOldObjReqlist = new();
@@ -82,14 +78,16 @@ namespace Budget.TimerFunction.Aws
                                     row["CreateOn"] = DateTime.UtcNow;
                                     sourceData.Rows.Add(row);
                                 }
-                                log.LogInformation($"Account ID {AccountId} -  {i} records processed.");
+                                logger.Log(LogLevel.Information, "AWSTagDetailsFunction", $"Account ID {AccountId} -  {i} records processed.");
                             }
                         }
                     }
                 }
-                foreach (var accountId in accountIds)
+                if(accountIds.Count>0)
                 {
-                    log.LogError($"Error - Account ID {accountId} not available in bucket");
+                    logger.Log(LogLevel.Error, "AWSTagDetailsFunction", $"AWS Tag Error - Account's {string.Join(",", accountIds)} not available in bucket");
+                    
+                    throw new Exception($"AWS Tag Error - Account's '{string.Join(",", accountIds)}' not found in AWS bucket");
                 }
                 if (sourceData.Rows.Count > 0)
                 {
@@ -119,11 +117,12 @@ namespace Budget.TimerFunction.Aws
                     //Add New backups files
                     CopyingFilesToBackUpFolder(s3Client, DestinationFolders);
                 }
+                logger.Log(LogLevel.Information, "AWSTagDetailsFunction", $"AWS TagDetails function process completed.");
             }
-
-            catch (Exception Excep)
+            catch (Exception ex)
             {
-                Console.WriteLine(Excep.Message, Excep.InnerException);
+                logger.Log(LogLevel.Error, "AWSTagDetailsFunction", $"AWS Tag Details Exception : {ex.Message} - {ex.InnerException}");
+                throw;
             }
         }
 
