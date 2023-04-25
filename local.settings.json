@@ -51,7 +51,7 @@
 
     "AwsAccessKey": "AKIATPOBGAQSVOZUWHCB",
     "AwsSecretKey": "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",
-    "AwsBucketName": "finops-povfiles",
+    "AwsBucketName": "finops-pov",
     "AwsRegion": "us-east-1",
     "AwsDailyTimer": "0 */0 * * * *",
     //"AwsWeekelyTimer": "0 */0 * * * *",
