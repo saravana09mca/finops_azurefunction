@@ -2,6 +2,7 @@
 using Microsoft.Azure.Storage.Blob;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -54,6 +55,21 @@ namespace Budget.TimerFunction
                     
             }
             return severity;
+        }
+        public static string GetConfigValueByKey(string Key) {
+            string value = string.Empty;
+            // Set up the SQL connection and command
+            using (SqlConnection connection = new SqlConnection(Environment.GetEnvironmentVariable("sqlconnectionstring")))
+            {
+                connection.Open();
+                using (SqlCommand command = new SqlCommand("SELECT ConfigValue FROM Configuration where ConfigKey='"+ Key + "' and IsActive=1", connection))
+                {
+                    // Execute the command and retrieve the scalar value
+                     value = (string)command.ExecuteScalar();
+                   
+                }
+            }
+            return value;
         }
     }
 }

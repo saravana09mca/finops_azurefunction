@@ -48,6 +48,7 @@ namespace Budget.TimerFunction
 
         public static class Aws
         {
+            public static string AWSAccountsAccessKeys { get; } = Helper.GetConfigValueByKey("AWSAccountsAccessKeysConfig");
             public static string AccessKey { get; } = Environment.GetEnvironmentVariable("AwsAccessKey");
             public static string SecretKey { get; } = Environment.GetEnvironmentVariable("AwsSecretKey");
             public static string BucketName { get; } = Environment.GetEnvironmentVariable("AwsBucketName");
