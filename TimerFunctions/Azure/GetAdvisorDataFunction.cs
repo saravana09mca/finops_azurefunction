@@ -30,75 +30,82 @@ namespace Budget.TimerFunction.Azure
             .WithAuthority(new Uri (ConfigStore.AADAuthority))
             .Build();
 
-            AuthenticationResult authResult = await clientApp.AcquireTokenForClient(respurceUrl).ExecuteAsync();
-            var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-            
-            var credentials = new TokenCredentials(authResult.AccessToken);
-            var subscriptionClient = new SubscriptionClient(credentials);
-
-            DataTable sourceData = new DataTable();
-            sourceData.Columns.Add("Id");            
-            sourceData.Columns.Add("RecommendationId");
-            sourceData.Columns.Add("Type");
-            sourceData.Columns.Add("Name");
-            sourceData.Columns.Add("Category");
-            sourceData.Columns.Add("Impact");
-            sourceData.Columns.Add("ImpactedField");
-            sourceData.Columns.Add("ImpactedValue");
-            sourceData.Columns.Add("LastUpdated");
-            sourceData.Columns.Add("RecommendationTypeId");
-            sourceData.Columns.Add("Region");
-            sourceData.Columns.Add("ResourceId");
-            sourceData.Columns.Add("Problem");
-            sourceData.Columns.Add("Solution");
-			sourceData.Columns.Add("SavingsAmount");            
-			sourceData.Columns.Add("AnnualSavingsAmount");            
-			sourceData.Columns.Add("ResourceGroup");
-            
-            foreach (var subscription in subscriptionClient.Subscriptions.List())
+            try
             {
-                log.LogInformation("Subscription id is " +subscription.SubscriptionId);
-                string subscriptionId = subscription.SubscriptionId;
+                AuthenticationResult authResult = await clientApp.AcquireTokenForClient(respurceUrl).ExecuteAsync();
+                var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
+            
+                var credentials = new TokenCredentials(authResult.AccessToken);
+                var subscriptionClient = new SubscriptionClient(credentials);
 
-                var advisorApiUrl = $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Advisor/recommendations?api-version=2020-01-01";
-                var advisorApiResult = httpClient.GetAsync(advisorApiUrl).Result;
-
-                if (advisorApiResult.IsSuccessStatusCode)
+                DataTable sourceData = new DataTable();
+                sourceData.Columns.Add("Id");            
+                sourceData.Columns.Add("RecommendationId");
+                sourceData.Columns.Add("Type");
+                sourceData.Columns.Add("Name");
+                sourceData.Columns.Add("Category");
+                sourceData.Columns.Add("Impact");
+                sourceData.Columns.Add("ImpactedField");
+                sourceData.Columns.Add("ImpactedValue");
+                sourceData.Columns.Add("LastUpdated");
+                sourceData.Columns.Add("RecommendationTypeId");
+                sourceData.Columns.Add("Region");
+                sourceData.Columns.Add("ResourceId");
+                sourceData.Columns.Add("Problem");
+                sourceData.Columns.Add("Solution");
+			    sourceData.Columns.Add("SavingsAmount"); 
+			    sourceData.Columns.Add("AnnualSavingsAmount");
+			    sourceData.Columns.Add("ResourceGroup");
+            
+                foreach (var subscription in subscriptionClient.Subscriptions.List())
                 {
-                    var result = advisorApiResult.Content.ReadAsStringAsync().Result;
-                    dynamic advisorApiResponse = JsonConvert.DeserializeObject<AdvisorApiResponse>(result);
+                    log.LogInformation("Subscription id is " +subscription.SubscriptionId);
+                    string subscriptionId = subscription.SubscriptionId;
+                    var advisorApiUrl = $"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Advisor/recommendations?api-version=2020-01-01";
+                    var advisorApiResult = httpClient.GetAsync(advisorApiUrl).Result;
 
-                    foreach(Value row in advisorApiResponse.value)
+                    if (advisorApiResult.IsSuccessStatusCode)
                     {
-                        string[] resourceGroup =  row.properties.resourceMetadata.resourceId.Split('/');
-                        sourceData.Rows.Add(null, row.id, row.type, row.name, row.properties.Category,
-                            row.properties.Impact, row.properties.ImpactedField, row.properties.ImpactedValue,
-                            row.properties.LastUpdated, row.properties.RecommendationTypeId,
-                            row.properties.extendedProperties == null ? string.Empty : row.properties.extendedProperties.region,
-                            row.properties.resourceMetadata.resourceId, row.properties.shortDescription.problem,
-                            row.properties.shortDescription.solution,
-                            row.properties.extendedProperties == null ? null : row.properties.extendedProperties.SavingsAmount,
-                            row.properties.extendedProperties == null ? null : row.properties.extendedProperties.AnnualSavingsAmount,
-                            resourceGroup.Length > 5 ? resourceGroup[4].ToUpper() : string.Empty);
-                    }
-                }                   
-            }
+                        var result = advisorApiResult.Content.ReadAsStringAsync().Result;
+                        dynamic advisorApiResponse = JsonConvert.DeserializeObject<AdvisorApiResponse>(result);
 
-            if(sourceData.Rows.Count > 0)
-            {
-                using (SqlConnection connection = new SqlConnection(myConnectionString))
-                {
-                    SqlCommand command = new SqlCommand("DELETE FROM AdvisorRecommendations;", connection);
-                    command.Connection.Open();
-                    command.ExecuteNonQuery();
-                    command.Connection.Close();
+                        foreach(Value row in advisorApiResponse.value)
+                        {
+                            string[] resourceGroup =  row.properties.resourceMetadata.resourceId.Split('/');
+                            sourceData.Rows.Add(null, row.id, row.type, row.name, row.properties.Category,
+                                row.properties.Impact, row.properties.ImpactedField, row.properties.ImpactedValue,
+                                row.properties.LastUpdated, row.properties.RecommendationTypeId,
+                                row.properties.extendedProperties == null ? string.Empty : row.properties.extendedProperties.region,
+                                row.properties.resourceMetadata.resourceId, row.properties.shortDescription.problem,
+                                row.properties.shortDescription.solution,
+                                row.properties.extendedProperties == null ? null : row.properties.extendedProperties.SavingsAmount,
+                                row.properties.extendedProperties == null ? null : row.properties.extendedProperties.AnnualSavingsAmount,
+                                resourceGroup.Length > 5 ? resourceGroup[4].ToUpper() : string.Empty);
+                        }
+                    }                  
                 }
-                SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
-                bcp.DestinationTableName = "AdvisorRecommendations";
-                bcp.WriteToServer(sourceData);
-            }       
+
+                if(sourceData.Rows.Count > 0)
+                {
+                    using (SqlConnection connection = new SqlConnection(myConnectionString))
+                    {
+                        SqlCommand command = new SqlCommand("DELETE FROM AdvisorRecommendations;", connection);
+                        command.Connection.Open();
+                        command.ExecuteNonQuery();
+                        command.Connection.Close();
+                    }
+                    SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
+                    bcp.DestinationTableName = "AdvisorRecommendations";
+                    bcp.WriteToServer(sourceData);
+                } 
+            }
+            catch(Exception ex)
+            {
+                string errorMessage = ex.Message;
+                log.LogError(errorMessage, "An exception occured");
+            }      
         }       
     }
 }

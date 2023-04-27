@@ -85,7 +85,14 @@ namespace Budget.TimerFunction.Azure
                                 row["SubscriptionName"] = subscription.DisplayName;
                                 row["ResourceGroupName"] = resourceGroupName;
                                 row["ResourceName"] = vm.name;
+                                if(vm.ContainsKey("type"))
+                                {
                                 row["ResourceType"] = vm.type;
+                                }
+                                else
+                                {
+                                    row["ResourceType"] = "Microsoft.Compute/virtualMachines";
+                                }
                                 row["ResourceId"] = vmId;
                                 row["CreationDate"] = vm.properties.instanceView.statuses[0].time;
                                 row["IsOrphaned"] = false;
@@ -119,7 +126,14 @@ namespace Budget.TimerFunction.Azure
                                 row["SubscriptionName"] = subscription.DisplayName;
                                 row["ResourceGroupName"] = resourceGroupName;
                                 row["ResourceName"] = disk.name;
+                                if(disk.ContainsKey("type"))
+                                {
                                 row["ResourceType"] = disk.type;
+                                }
+                                else
+                                {
+                                    row["ResourceType"] = "Microsoft.Compute/disks";
+                                }
                                 row["ResourceId"] = diskId;
                                 row["CreationDate"] = disk.properties.timeCreated;
                                 row["IsOrphaned"] = false;
@@ -159,7 +173,14 @@ namespace Budget.TimerFunction.Azure
                                 row["SubscriptionName"] = subscription.DisplayName;
                                 row["ResourceGroupName"] = resourceGroupName;
                                 row["ResourceName"] = item.name;
+                                if(item.ContainsKey("type"))
+                                {
                                 row["ResourceType"] = item.type;
+                                }
+                                else
+                                {
+                                    row["ResourceType"] = "Microsoft.Compute/snapshots";
+                                }
                                 row["ResourceId"] = snapshotId;
                                 row["CreationDate"] = creationDate.ToString();
                                 row["IsOrphaned"] = false;
@@ -179,57 +200,49 @@ namespace Budget.TimerFunction.Azure
                             }
                         }
 
-                        //call api to get list of resource groups using subscription ids
-                        string resourceApiUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/resourcegroups?api-version=2021-04-01";
-                        var resourceGroupResponse = httpClient.GetAsync(resourceApiUrl).Result;
-
-                        if (resourceGroupResponse.IsSuccessStatusCode)
+                        //call api to get the Public IP details
+                        var publicIPUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/providers/Microsoft.Network/publicIPAddresses?api-version=2022-09-01";
+                        var publicIPResponse = httpClient.GetAsync(publicIPUrl).Result;
+                        if (publicIPResponse.IsSuccessStatusCode)
                         {
-                            var result = resourceGroupResponse.Content.ReadAsStringAsync().Result;
-                            dynamic resourceGroupJson = JsonConvert.DeserializeObject(result);
-                            foreach (var rgname in resourceGroupJson.value)
+                            var ipResult = publicIPResponse.Content.ReadAsStringAsync().Result;
+                            dynamic publicIPJson = JsonConvert.DeserializeObject(ipResult);
+
+                            foreach (var ip in publicIPJson.value)
                             {
-                                Console.WriteLine("{0} \n", rgname.name);
-                                string rgName = Convert.ToString(rgname.name);
-                                log.LogInformation("ResourceGrouptName for Subscription id " +subscription.SubscriptionId + " is " + rgName);
-                            
-                                //call api to get the Public IP details
-                                var publicIPUrl = $"https://management.azure.com/subscriptions/{subscriptionIds}/resourceGroups/{rgName}/providers/Microsoft.Network/publicIPAddresses?api-version=2022-09-01";
-                                var publicIPResponse = httpClient.GetAsync(publicIPUrl).Result;
-                                if (publicIPResponse.IsSuccessStatusCode)
+                                row = sourceData.NewRow();
+                                string IPId =  ip.id;
+                                string rgName = IPId.Split('/')[4];
+
+                                row["SubscriptionID"] = subscriptionIds;
+                                row["SubscriptionName"] = subscription.DisplayName;
+                                row["ResourceGroupName"] = rgName;
+                                row["ResourceName"] = ip.name;
+                                if(ip.ContainsKey("type"))
                                 {
-                                    var ipResult = publicIPResponse.Content.ReadAsStringAsync().Result;
-                                    dynamic publicIPJson = JsonConvert.DeserializeObject(ipResult);
-
-                                    foreach (var ip in publicIPJson.value)
-                                    {
-                                        row = sourceData.NewRow();
-                                        string IPId =  ip.id;
-
-                                        row["SubscriptionID"] = subscriptionIds;
-                                        row["SubscriptionName"] = subscription.DisplayName;
-                                        row["ResourceGroupName"] = rgName;
-                                        row["ResourceName"] = ip.name;
-                                        row["ResourceType"] = ip.type;
-                                        row["ResourceId"] = ip.id;
-                                        row["CreationDate"] = "";
-                                        row["IsOrphaned"] = false;
-                                        row["AlertMessage"] = "";
-                                        row["DateAdded"] = DateTime.Now;
-                                        if(ip.properties.ContainsKey("ipConfiguration"))
-                                        {
-                                            row["IsOrphaned"] = false;
-                                        }
-                                        else
-                                        {
-                                            row["IsOrphaned"] = true;
-                                            row["AlertMessage"] = $"Public IP with Resoure ID - {IPId} is marked as an orphaned resource.";
-                                        }
-                                        sourceData.Rows.Add(row); 
-                                    }
+                                row["ResourceType"] = ip.type;
                                 }
+                                else
+                                {
+                                    row["ResourceType"] = "Microsoft.Network/publicIPAddresses";
+                                }
+                                row["ResourceId"] = ip.id;
+                                row["CreationDate"] = "";
+                                row["IsOrphaned"] = false;
+                                row["AlertMessage"] = "";
+                                row["DateAdded"] = DateTime.Now;
+                                if(ip.properties.ContainsKey("ipConfiguration"))
+                                {
+                                    row["IsOrphaned"] = false;
+                                }
+                                else
+                                {
+                                    row["IsOrphaned"] = true;
+                                    row["AlertMessage"] = $"Public IP with Resoure ID - {IPId} is marked as an orphaned resource.";
+                                }
+                                sourceData.Rows.Add(row); 
                             }
-                        }
+                        } 
                     }
                 }
                 if(sourceData.Rows.Count > 0)
