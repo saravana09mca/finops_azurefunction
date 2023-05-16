@@ -11,7 +11,7 @@ namespace Budget.TimerFunction.Azure
     public class ExportToSql
     {
         [FunctionName("ExportToSql")]
-        public void Run([BlobTrigger("des-file-transfer/{name}", Connection = "stfinocostconsumption_STORAGE")]Stream myBlob, string name, ILogger log)
+        public void Run([BlobTrigger("export-tosql-testing/{name}", Connection = "stfinocostconsumption_STORAGE")]Stream myBlob, string name, ILogger log)
         {
             log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n Size: {myBlob.Length} Bytes");
             var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
@@ -50,9 +50,9 @@ namespace Budget.TimerFunction.Azure
                         //log.LogInformation("csv split");
                         //var dt = DateTime.ParseExact(splits[12], "yyyy/MM/dd", new System.Globalization.CultureInfo("en-US"));
                         var dtSplit = splits[12].Split('/','-');
-                        log.LogInformation("date split");
+                        //log.LogInformation("date split");
                         var dt = new DateTime(Convert.ToInt16(dtSplit[2]), Convert.ToInt16(dtSplit[0]), Convert.ToInt16(dtSplit[1]));
-                        log.LogInformation("date -" + dt.ToShortDateString());
+                        //log.LogInformation("date -" + dt.ToShortDateString());
 
                         if(dt.Date == DateTime.Now.Date.AddDays(-1))
                         {
@@ -65,7 +65,7 @@ namespace Budget.TimerFunction.Azure
                 if(sourceData.Rows.Count > 0)
                 {
                     SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
-                    bcp.DestinationTableName = "CloudConsumption";
+                    bcp.DestinationTableName = "CloudConsumptionTest";
                     bcp.WriteToServer(sourceData);
                 }
             }
