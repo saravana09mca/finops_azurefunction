@@ -54,7 +54,6 @@
     "AwsBucketName": "finops-pov",
     "AwsRegion": "us-east-1",
     "AwsDailyTimer": "0 */0 * * * *",
-    //"AwsWeekelyTimer": "0 */0 * * * *",
     "AwsWeekelyTimer": "0 0 9 * * Mon",
     "AwsCustomTimer": "0 */1 * * * *",
     "AWSNewAccBucketName": "finops-povfiles",
