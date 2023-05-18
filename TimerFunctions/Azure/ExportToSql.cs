@@ -61,10 +61,8 @@ namespace Budget.TimerFunction.Azure
                 }
                 if(sourceData.Rows.Count > 0)
                 {
-                    log.LogInformation($"count is " +sourceData.Rows.Count);
                     SqlBulkCopy bcp = new SqlBulkCopy(myConnectionString);
-                    log.LogInformation(myConnectionString);
-                    bcp.DestinationTableName = "CloudConsumptionTest";
+                    bcp.DestinationTableName = "CloudConsumption";
                     bcp.BulkCopyTimeout = 120;
                     bcp.WriteToServer(sourceData);
                 }
