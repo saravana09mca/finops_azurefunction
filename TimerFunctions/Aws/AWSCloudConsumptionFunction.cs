@@ -31,7 +31,6 @@ namespace Budget.TimerFunction.Aws
 
             string endDate;
             DateTime CurrentDate = DateTime.Today;
-
             var accountAccessKeys = new AccountAccessKeys();
             foreach (JProperty prop in obj.Properties())
             {
@@ -70,7 +69,7 @@ namespace Budget.TimerFunction.Aws
                 awsCloudConsumptionModel.Prefix = startDate.ToString("yyyyMMdd") + "-" + endDate;
                 awsCloudConsumptionModel.StartDate = startDate;
                 awsCloudConsumptionModel.EndDate = endDate;
-                awsCloudConsumptionModel.CurrentDate = CurrentDate;              
+                awsCloudConsumptionModel.CurrentDate = CurrentDate;
                 await PutCloudConsumptionFunction(logger, awsCloudConsumptionModel);
 
                 logger.Log(LogLevel.Information, "AWSCloudConsumptionFunction", $"AWSCloudConsumption - AccountId {prop.Name} Completed..");
@@ -90,7 +89,6 @@ namespace Budget.TimerFunction.Aws
 
                 DataTable sourceData = new DataTable();
                 sourceData.Columns.Add("Id");
-                sourceData.Columns.Add("AccountId");
                 sourceData.Columns.Add("BillingPeriodEndDate");
                 sourceData.Columns.Add("Location");
                 sourceData.Columns.Add("RegionCode");
@@ -110,6 +108,7 @@ namespace Budget.TimerFunction.Aws
                 sourceData.Columns.Add("ResourceTagsUserName");
                 sourceData.Columns.Add("ResourceTagsUserProject");
                 sourceData.Columns.Add("CreatedOn");
+                sourceData.Columns.Add("AccountId");
 
                 try
                 {
@@ -133,8 +132,7 @@ namespace Budget.TimerFunction.Aws
                                     //select only AWS Usage data from report and exclude tax,fees data
                                     if (dr["lineItem/LineItemType"].ToString().ToLower() == "usage")
                                     {
-                                        DataRow row = sourceData.NewRow();                                  
-                                        row["AccountId"] = awsCloudConsumption.AccountId;
+                                        DataRow row = sourceData.NewRow();
                                         row["BillingPeriodEndDate"] = dr["bill/BillingPeriodEndDate"];
                                         row["Location"] = dr["product/fromLocation"];
                                         row["RegionCode"] = dr["product/fromRegionCode"];
@@ -153,7 +151,8 @@ namespace Budget.TimerFunction.Aws
                                         row["ResourceTagsUserEnv"] = dr["resourceTags/user:Env"];
                                         row["ResourceTagsUserName"] = dr["resourceTags/user:Name"];
                                         row["ResourceTagsUserProject"] = dr["resourceTags/user:Project"];
-                                        row["CreatedOn"] = DateTime.ParseExact(awsCloudConsumption.CreatedOn, "yyyyMMdd", null).ToString("yyyy-MM-dd"); 
+                                        row["CreatedOn"] = DateTime.ParseExact(awsCloudConsumption.CreatedOn, "yyyyMMdd", null).ToString("yyyy-MM-dd");
+                                        row["AccountId"] = awsCloudConsumption.AccountId;
                                         sourceData.Rows.Add(row);
                                     }
                                 }
@@ -168,12 +167,12 @@ namespace Budget.TimerFunction.Aws
                             sourceConnection.Open();
                             logger.Log(LogLevel.Information, "AWSCloudConsumptionFunction", $"AWSCloudConsumption - Account {awsCloudConsumption.AccountId} deleting records from  {awsCloudConsumption.StartDate.ToString("yyyy/MM/dd")} to {awsCloudConsumption.CreatedOn}.");
                             //Perform an Delete operation for old data from the source table.
-                            SqlCommand commandRowCount = new SqlCommand("Delete from dbo.AWSCloudConsumption_1 where CreatedOn between '" + awsCloudConsumption.StartDate.ToString("yyyy/MM/dd") + "' and '" + awsCloudConsumption.CreatedOn + "' and AccountId='"+ awsCloudConsumption.AccountId+ "';", sourceConnection);
+                            SqlCommand commandRowCount = new SqlCommand("Delete from dbo.AWSCloudConsumption where CreatedOn between '" + awsCloudConsumption.StartDate.ToString("yyyy/MM/dd") + "' and '" + awsCloudConsumption.CreatedOn + "' and AccountId='" + awsCloudConsumption.AccountId + "';", sourceConnection);
                             commandRowCount.ExecuteNonQuery();
-                         
+
                             //Perform Bulk Operation 
                             SqlBulkCopy bcp = new SqlBulkCopy(ConfigStore.SQLConnectionString);
-                            bcp.DestinationTableName = "AWSCloudConsumption_1";
+                            bcp.DestinationTableName = "AWSCloudConsumption";
                             bcp.WriteToServer(sourceData);
                             logger.Log(LogLevel.Information, "AWSCloudConsumptionFunction", $"AWSCloudConsumption - Account {awsCloudConsumption.AccountId} data inserted.");
                         }
