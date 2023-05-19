@@ -13,6 +13,7 @@
     "DestinationBlobName": "testazure/costconsumptiondata/",
     "Timer": "0 0 1 * * *",
     "TimerHistory": "0 0 0 5 * *",
+    "TimerCleanup": "0 0/10 * * * *",
     "WeeklyTrigger": "0 0 6 * * MON",
 
     "AzureStorageAccountConnectionString": "DefaultEndpointsProtocol=https;AccountName=rgfinops002b30c;AccountKey=595YjlSwqrIfYlbxQ4pfiwqG3fR7mlCz4nMrCNEG0iMpckvd3fys8L0ryM8U0sfJ6108mNfwY6r7+AStyRL7QQ==;EndpointSuffix=core.windows.net",
