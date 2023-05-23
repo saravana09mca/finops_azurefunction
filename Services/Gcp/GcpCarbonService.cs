@@ -25,14 +25,14 @@ namespace AzureFunction.Services.Gcp
             try
             {
                 DateTime datetime = DateTime.UtcNow;
-                var date = new DateTime(datetime.Year, datetime.Month, 1);
-                //var endDate = date.AddMonths(1).AddDays(-1);
+                var startDate = new DateTime(datetime.Year, datetime.Month-1, 1);
+                
 
-                _logger.LogInformation($"GCP Carbon FootPrint Data {date.ToString("yyyy-MM-dd")}");
+                _logger.LogInformation($"GCP Carbon FootPrint Data {startDate.ToString("yyyy-MM-dd")}");
 
-                DataTable dt = GetGcpCarbonFootPrintList(client, date.ToString("yyyy-MM-dd"));
+                DataTable dt = GetGcpCarbonFootPrintList(client, startDate.ToString("yyyy-MM-dd"));
 
-                _gcpSql.SaveCarbonFootPrint(dt, date.ToString("yyyy-MM-dd"));
+                _gcpSql.SaveCarbonFootPrint(dt, startDate.ToString("yyyy-MM-dd"));
             }
             catch(Exception)
             {

@@ -48,7 +48,7 @@ namespace Budget.TimerFunction
                 dt.Columns.Add("CurrencyConversionRate");
                 dt.Columns.Add("ResourceName");
                 dt.Columns.Add("ResourceId");
-                dt.Columns.Add("DataInsertDate");           
+                dt.Columns.Add("DataInsertDate");         
 
                 foreach (GCPBillingCostModel.GCPBillingCost data in listGCPDdata)
                 {
@@ -384,6 +384,8 @@ namespace Budget.TimerFunction
                 dt.Columns.Add("Cost");
                 dt.Columns.Add("BudgetAmountType");
                 dt.Columns.Add("CurrencyCode");
+                dt.Columns.Add("AlertThresholdExceeded");
+                dt.Columns.Add("ForecastThresholdExceeded");
                 dt.Columns.Add("InsertDate");
 
                 foreach (GcpBudgetModel.GcpBudget data in objBudgetList)
@@ -396,6 +398,8 @@ namespace Budget.TimerFunction
                     row["Cost"] = data.costAmount;
                     row["BudgetAmountType"] = data.budgetAmountType;
                     row["CurrencyCode"] = data.currencyCode;
+                    row["AlertThresholdExceeded"] = data.alertThresholdExceeded;
+                    row["ForecastThresholdExceeded"] = data.forecastThresholdExceeded;
                     row["InsertDate"] = DateTime.UtcNow;
                     dt.Rows.Add(row);
                 }
@@ -440,40 +444,13 @@ namespace Budget.TimerFunction
             }
             
         }
-        public void SaveGcpOrphaned(List<GCPAdvisorModel.GCPAdvisor> objAdvisor)
+        public void SaveGcpOrphaned(DataTable dt)
         {
          
             try
             {
                 var myConnectionString = Environment.GetEnvironmentVariable("sqlconnectionstring");
-                DataTable dt = new DataTable();
-                dt.Columns.Add("Id");
-                dt.Columns.Add("ProjectNumber");
-                dt.Columns.Add("Name");
-                dt.Columns.Add("Location");
-                dt.Columns.Add("Type");
-                dt.Columns.Add("Description");
-                dt.Columns.Add("Category");
-                dt.Columns.Add("LastRefreshTime");
-                dt.Columns.Add("InsertDate");
-
-                foreach (GCPAdvisorModel.GCPAdvisor data in objAdvisor)
-                {
-                    double? cost = (((data.Units == null) ? 0 : data.Units) + (data.Nanos / Math.Pow(10, 9)));
-
-                    DataRow row = dt.NewRow();
-                    row["Id"] = null;
-                    row["ProjectNumber"] = data.ProjectNumber;
-                    row["Name"] = data.Name;
-                    row["Location"] = data.Location;
-                    row["Type"] = data.Type;
-                    row["Description"] = data.Description;
-                    row["Category"] = data.Category;
-                    row["LastRefreshTime"] = data.LastRefreshDate;
-                    row["InsertDate"] = DateTime.UtcNow;
-                    dt.Rows.Add(row);
-                }
-
+              
                 if (dt.Rows.Count > 0)
                 {
                     _logger.LogInformation($"Gcp Orphaned - Delete Process start.");
