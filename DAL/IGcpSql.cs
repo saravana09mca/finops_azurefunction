@@ -21,6 +21,6 @@ namespace Budget.TimerFunction
         void SaveCarbonFootPrint(DataTable dt, string date);
         void SaveGcpTags(List<GcpTagsModel.GcpTags> listGCPTagsdata);
         void SaveGcpUtilization(List<GCPUtilizationModel.GCPUtilization> objUtilization, string date);
-        void SaveGcpOrphaned(List<GCPAdvisorModel.GCPAdvisor> objAdvisor);
+        void SaveGcpOrphaned(DataTable dt);
     }
 }

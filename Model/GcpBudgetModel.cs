@@ -15,6 +15,8 @@ namespace Budget.TimerFunction.GcpBudgetModel
         public double budgetAmount { get; set; }
         public string budgetAmountType { get; set; }
         public string currencyCode { get; set; }
+        public decimal alertThresholdExceeded { get; set; }
+        public decimal forecastThresholdExceeded { get; set; }
     }
 
 

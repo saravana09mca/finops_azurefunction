@@ -6,6 +6,8 @@ using System.Linq;
 
 using Budget.TimerFunction.GCPAdvisorModel;
 using Microsoft.Extensions.Logging;
+using System.Data;
+using Microsoft.OData.Edm;
 
 namespace AzureFunction.Services.Gcp
 {
@@ -24,112 +26,79 @@ namespace AzureFunction.Services.Gcp
         public void PutGcpOrphanedData(BigQueryClient client)
         {
 
-            List<GCPAdvisor> objOrphanedList = new List<GCPAdvisor>();
             _logger.LogInformation("PutGcpOrphanedData start");
             try
             {
 
-                var objOrphanedDataRecommendation = GetGCPOrphanedRecommendationList(client);
-                var objOrphanedDataInsight = GetGCPOrphanedInsightList(client);
-                foreach (var objRecommendation in objOrphanedDataRecommendation)
-                {
-                    GCPAdvisor objOrphanedData = new GCPAdvisor();
-                    objOrphanedData.ProjectNumber = objRecommendation.cloud_entity_id;
-                    objOrphanedData.Name = objRecommendation.name;
-                    objOrphanedData.Description = objRecommendation.description;
-                    objOrphanedData.LastRefreshDate = objRecommendation.last_refresh_time;
-                    objOrphanedData.Type = objRecommendation.recommender;
-                    objOrphanedData.Category = objRecommendation.primary_impact.category;
-                    objOrphanedData.Location = objRecommendation.location;
-                    objOrphanedList.Add(objOrphanedData);
-                }
+                DataTable dt = new DataTable();
+                dt.Columns.Add("Id");
+                dt.Columns.Add("ProjectId");
+                dt.Columns.Add("ProjectNumber");
+                dt.Columns.Add("ProjectName");
+                dt.Columns.Add("Location");
+                dt.Columns.Add("ResourceName");
+                dt.Columns.Add("ResourceType");
+                dt.Columns.Add("Description");
+                dt.Columns.Add("Date");
+                dt.Columns.Add("InsertDate");
+                dt = GetOrphanedResources(client, dt);
+                dt = GetOrphanedResourcesInsight(client, dt);
 
-                foreach (var objInsight in objOrphanedDataInsight)
-                {
-                    GCPAdvisor objOrphanedData = new GCPAdvisor();
-                    objOrphanedData.ProjectNumber = objInsight.cloud_entity_id;
-                    objOrphanedData.Name = objInsight.name;
-                    objOrphanedData.Description = objInsight.description;
-                    objOrphanedData.LastRefreshDate = objInsight.last_refresh_time;
-                    objOrphanedData.Type = objInsight.insight_type;
-                    objOrphanedData.Category = objInsight.category;
-                    objOrphanedData.Location = objInsight.location;
-                    objOrphanedList.Add(objOrphanedData);
-                }
-
-                _logger.LogInformation($"GCP Orphaned data rows {objOrphanedList.Count} returned");
-                _gcpSql.SaveGcpOrphaned(objOrphanedList);
+                _logger.LogInformation($"GCP Orphaned data rows {dt.Rows.Count} returned");
+                _gcpSql.SaveGcpOrphaned(dt);
             }
-            catch(Exception)
+            catch (Exception)
             {
                 throw;
             }
-        }
-        public List<GCPAdvisorRecommendation> GetGCPOrphanedRecommendationList(BigQueryClient client)
+        }        
+        public DataTable GetOrphanedResources(BigQueryClient client, DataTable dt)
         {
-            List<GCPAdvisorRecommendation> objOrphanedData = new List<GCPAdvisorRecommendation>();
-            // Build the query
-            var query = $"SELECT * FROM `{ConfigStore.GCP.GCP_AdvisorProjectId}.{ConfigStore.GCP.GCP_AdvisorDatasetId}.{ConfigStore.GCP.GCP_AdvisorTableId}` where recommender in ('google.cloudsql.instance.IdleRecommender'," +
-                $"'google.compute.image.IdleResourceRecommender'," +
-                $"'google.compute.address.IdleResourceRecommender'," +
-                $"'google.compute.disk.IdleResourceRecommender'," +
-                $"'google.compute.instance.IdleResourceRecommender')";
 
 
+            var query = $"SELECT * FROM `eygds-sandbox-cloud-359111.billing_info_2.orphaned_resource_3`";
             // Run the query and get the results
             var results = client.ExecuteQuery(query, parameters: null);
-
-            _logger.LogInformation($"GCP Orphaned No of Recommendation rows {results.TotalRows} returned");
-
-            Dictionary<string, object> rowoDict;
-            List<string> fields = new List<string>();
-            foreach (var col in results.Schema.Fields)
+            foreach (var data in results)
             {
-                fields.Add(col.Name);
+                DataRow row = dt.NewRow();
+                row["Id"] = null;
+                row["ProjectId"] = data["project_id"];
+                row["ProjectNumber"] = data["project_number"];
+                row["ProjectName"] = data["project_name"];
+                row["Location"] = data["location"];
+                row["ResourceName"] = data["resource_name"];
+                row["Date"] = data["creationtimestamp"];
+                row["ResourceType"] = data["resource_type"];
+                row["Description"] = data["description"];
+                row["InsertDate"] = DateTime.UtcNow;
+                dt.Rows.Add(row);
             }
-            foreach (var row in results)
-            {
-                rowoDict = new Dictionary<string, object>();
-                foreach (var col in fields)
-                {
-                    rowoDict.Add(col, row[col]);
-                }
-                string gcpBillingJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(rowoDict);
-                var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GCPAdvisorRecommendation>(gcpBillingJsonData);
-                objOrphanedData.Add(result);
-            }
-            return objOrphanedData;
+            return dt;
         }
-        public List<GCPAdvisorInsight> GetGCPOrphanedInsightList(BigQueryClient client)
+        public DataTable GetOrphanedResourcesInsight(BigQueryClient client, DataTable dt)
         {
-            List<GCPAdvisorInsight> objOrphanedData = new List<GCPAdvisorInsight>();
-            // Build the query
-            var query = $"SELECT * FROM `{ConfigStore.GCP.GCP_AdvisorProjectId}.{ConfigStore.GCP.GCP_AdvisorDatasetId}.{ConfigStore.GCP.GCP_AdvisorInsightsTableId}`";
 
 
+            var query = $"SELECT * FROM `eygds-sandbox-cloud-359111.billing_info_2.orphaned_resource_4`";
             // Run the query and get the results
             var results = client.ExecuteQuery(query, parameters: null);
-
-            _logger.LogInformation($"GCP Orphaned Insight rows {results.TotalRows} returned");
-
-            Dictionary<string, object> rowoDict;
-            List<string> fields = new List<string>();
-            foreach (var col in results.Schema.Fields)
+            foreach (var data in results)
             {
-                fields.Add(col.Name);
+                DataRow row = dt.NewRow();
+                row["Id"] = null;
+                row["ProjectId"] = data["id"];
+                row["ProjectNumber"] = data["number"];
+                row["ProjectName"] = data["name"];
+                row["Location"] = data["location"];
+                row["ResourceName"] = data["resource_name"];
+                row["Date"] = data["time"];
+                row["ResourceType"] = data["resource_type"];
+                row["Description"] = data["description"];
+                row["InsertDate"] = DateTime.UtcNow;
+                dt.Rows.Add(row);
             }
-            foreach (var row in results)
-            {
-                rowoDict = new Dictionary<string, object>();
-                foreach (var col in fields)
-                {
-                    rowoDict.Add(col, row[col]);
-                }
-                string gcpBillingJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(rowoDict);
-                var result = Newtonsoft.Json.JsonConvert.DeserializeObject<GCPAdvisorInsight>(gcpBillingJsonData);
-                objOrphanedData.Add(result);
-            }
-            return objOrphanedData;
+            return dt;
         }
     }
 }
